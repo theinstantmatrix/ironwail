@@ -352,14 +352,49 @@ typedef struct {
 	int			numindexes;
 	intptr_t		indexes;        // offset into extradata: numindexes unsigned shorts
 	intptr_t		vertexes;       // offset into extradata: numposes*vertsperframe trivertx_t
+
+	intptr_t	vbovertofs;
+	intptr_t	vbostofs;
+	intptr_t	vboposeofs;
+	intptr_t	eboofs;
 	//ericw --
 
 	int					numposes;
+	intptr_t			nextsurface;	//spike
+	//int					nummorphposes;		//spike -- renamed from numposes
+	int					numboneposes;		//spike -- for iqm
+	int					numbones;			//spike -- for iqm
+	intptr_t			boneinfo;			//spike -- for iqm, boneinfo_t[numbones]
+	intptr_t			boneposedata;		//spike -- for iqm, bonepose_t[numboneposes*numbones]
+	enum
+	{
+		PV_QUAKE1,		//trivertx_t
+		PV_IQM,			//iqmvert_t
+	} poseverttype;	//spike
 	struct gltexture_s	*gltextures[MAX_SKINS][4]; //johnfitz
 	struct gltexture_s	*fbtextures[MAX_SKINS][4]; //johnfitz
 	int					texels[MAX_SKINS];	// only for player skins
 	maliasframedesc_t	frames[1];	// variable sized
 } aliashdr_t;
+
+typedef struct
+{
+	float xyz[3];
+	float norm[3];
+	float st[2];	//these are separate for consistency
+	float weight[4];
+	byte idx[4];
+} iqmvert_t;
+typedef struct
+{
+	float mat[12];
+} bonepose_t; //pose data for a single bone.
+typedef struct
+{
+	int parent; //-1 for a root bone
+	char name[32];
+	bonepose_t inverse;
+} boneinfo_t;
 
 #define	MAXALIASVERTS	2000 //johnfitz -- was 1024
 #define	MAXALIASFRAMES	1024 //spike -- was 256
@@ -500,9 +535,6 @@ typedef struct qmodel_s
 
 	GLuint		meshvbo;
 	GLuint		meshindexesvbo;
-	int			vboindexofs;    // offset in vbo of the hdr->numindexes unsigned shorts
-	int			vboxyzofs;      // offset in vbo of hdr->numposes*hdr->numverts_vbo meshxyz_t
-	int			vbostofs;       // offset in vbo of hdr->numverts_vbo meshst_t
 
 //
 // additional model data
