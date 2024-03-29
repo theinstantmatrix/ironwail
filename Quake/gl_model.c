@@ -3642,11 +3642,14 @@ static void MD5_BakeInfluences(const char *fname, bonepose_t *outposes, iqmvert_
 	float scaleimprecision = 1;
 	for (v = 0; v < numverts; v++, vert++, vinfo++)
 	{
+		// unquantized weights
+		float weights[countof (vert->weight)];
+		memset (weights, 0, sizeof (weights));
+
 		//st were already loaded
 		//norm will need to be calculated after we have xyz info
 		vert->xyz[0] = vert->xyz[1] = vert->xyz[2] = 0;
 		vert->idx[0] = vert->idx[1] = vert->idx[2] = vert->idx[3] = 0;
-		vert->weight[0] = vert->weight[1] = vert->weight[2] = vert->weight[3] = 0;
 
 		if (vinfo->firstweight + vinfo->count > numweights)
 			Sys_Error ("%s: weight index out of bounds", fname);
@@ -3658,42 +3661,42 @@ static void MD5_BakeInfluences(const char *fname, bonepose_t *outposes, iqmvert_
 			Matrix3x4_RM_Transform4(outposes[w->bone].mat, w->pos, pos);
 			VectorAdd(vert->xyz, pos, vert->xyz);
 
-			if (i < countof(vert->weight))
+			if (i < countof(weights))
 			{
-				vert->weight[i] = w->pos[3];
+				weights[i] = w->pos[3];
 				vert->idx[i] = w->bone;
 			}
 			else
 			{
 				//obnoxious code to find the lowest of the current possible bone indexes.
-				lowval = vert->weight[0];
+				lowval = weights[0];
 				lowidx = 0;
-				for (k = 1; k < countof(vert->weight); k++)
-					if (vert->weight[k] < lowval)
+				for (k = 1; k < countof(weights); k++)
+					if (weights[k] < lowval)
 					{
-						lowval = vert->weight[k];
+						lowval = weights[k];
 						lowidx = k;
 					}
-				if (vert->weight[lowidx] < w->pos[3])
+				if (weights[lowidx] < w->pos[3])
 				{	//found a lower/unset weight, replace it.
-					vert->weight[lowidx] = w->pos[3];
+					weights[lowidx] = w->pos[3];
 					vert->idx[lowidx] = w->bone;
 				}
 			}
 		}
 
 		//normalize in case we dropped some weights.
-		scale = vert->weight[0] + vert->weight[1] + vert->weight[2] + vert->weight[3];
+		scale = weights[0] + weights[1] + weights[2] + weights[3];
 		if (scale>0)
 		{
 			if (scaleimprecision < scale)
 				scaleimprecision = scale;
-			scale = 1/scale;
+			scale = 255.f/scale;
 			for (k = 0; k < countof(vert->weight); k++)
-				vert->weight[k] *= scale;
+				vert->weight[k] = (int) (weights[k] * scale);
 		}
 		else	//something bad...
-			vert->weight[0] = 1, vert->weight[1] = vert->weight[2] = vert->weight[3] = 0;
+			vert->weight[0] = 255, vert->weight[1] = vert->weight[2] = vert->weight[3] = 0;
 	}
 	if (maxinfluences > countof(vert->weight))
 		Con_DWarning("%s uses up to %u influences per vertex (weakest: %g)\n", fname, maxinfluences, scaleimprecision);
@@ -3708,11 +3711,13 @@ static void MD5_ComputeNormals(iqmvert_t *vert, size_t numverts, unsigned short 
 {
 	size_t			v, t, hashsize;
 	int				*hashmap;
+	vec3_t			*normals;
 	unsigned short	*weld;
 
 	hashsize = numverts * 2;
 	hashmap = (int *) calloc (hashsize, sizeof (*hashmap));
 	weld = (unsigned short *) malloc (numverts * sizeof (*weld));
+	normals = (vec3_t *) calloc (numverts, sizeof (vec3_t));
 
 	for (v = 0; v < numverts; v++)
 	{
@@ -3742,33 +3747,45 @@ static void MD5_ComputeNormals(iqmvert_t *vert, size_t numverts, unsigned short 
 		while (pos != end);
 	}
 
-	for (v = 0; v < numverts; v++)
-		vert[v].norm[0] = vert[v].norm[1] = vert[v].norm[2] = 0;
-
 	for (t = 0; t < numindexes; t += 3)
 	{
 		vec3_t d1, d2, norm;
-		iqmvert_t *v0 = &vert[weld[indexes[t+0]]];
-		iqmvert_t *v1 = &vert[weld[indexes[t+1]]];
-		iqmvert_t *v2 = &vert[weld[indexes[t+2]]];
+		int i0 = weld[indexes[t+0]];
+		int i1 = weld[indexes[t+1]];
+		int i2 = weld[indexes[t+2]];
+		iqmvert_t *v0 = &vert[i0];
+		iqmvert_t *v1 = &vert[i1];
+		iqmvert_t *v2 = &vert[i2];
 
 		VectorSubtract(v1->xyz, v0->xyz, d1);
 		VectorSubtract(v2->xyz, v0->xyz, d2);
 		CrossProduct(d2, d1, norm);
 
-		VectorAdd(v0->norm, norm, v0->norm);
-		VectorAdd(v1->norm, norm, v1->norm);
-		VectorAdd(v2->norm, norm, v2->norm);
+		VectorAdd(normals[i0], norm, normals[i0]);
+		VectorAdd(normals[i1], norm, normals[i1]);
+		VectorAdd(normals[i2], norm, normals[i2]);
 	}
 
 	for (v = 0; v < numverts; v++)
 	{
 		if (v == weld[v])
-			VectorNormalize(vert[v].norm);
+		{
+			VectorNormalize(normals[v]);
+			vert[v].norm[0] = (int) (normals[v][0] * 127.f);
+			vert[v].norm[1] = (int) (normals[v][1] * 127.f);
+			vert[v].norm[2] = (int) (normals[v][2] * 127.f);
+			vert[v].norm[3] = 0;
+		}
 		else
-			VectorCopy(vert[weld[v]].norm, vert[v].norm);
+		{
+			vert[v].norm[0] = vert[weld[v]].norm[0];
+			vert[v].norm[1] = vert[weld[v]].norm[1];
+			vert[v].norm[2] = vert[weld[v]].norm[2];
+			vert[v].norm[3] = vert[weld[v]].norm[3];
+		}
 	}
 
+	free (normals);
 	free (weld);
 	free (hashmap);
 }

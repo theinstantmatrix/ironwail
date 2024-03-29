@@ -379,11 +379,11 @@ typedef struct {
 
 typedef struct
 {
-	float xyz[3];
-	float norm[3];
-	float st[2];	//these are separate for consistency
-	float weight[4];
-	byte idx[4];
+	float		xyz[3];
+	int8_t		norm[4];
+	float		st[2];
+	uint8_t		weight[4];
+	uint8_t		idx[4];
 } iqmvert_t;
 typedef struct
 {

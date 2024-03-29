@@ -364,9 +364,9 @@ void R_FlushAliasInstances (void)
 	if (md5)
 	{
 		GL_VertexAttribPointerFunc  (0, 3, GL_FLOAT,			GL_FALSE, sizeof (iqmvert_t), (void *) (paliashdr->vbovertofs + offsetof (iqmvert_t, xyz)));
-		GL_VertexAttribPointerFunc  (1, 3, GL_FLOAT,			GL_FALSE, sizeof (iqmvert_t), (void *) (paliashdr->vbovertofs + offsetof (iqmvert_t, norm)));
+		GL_VertexAttribPointerFunc  (1, 4, GL_BYTE,				GL_TRUE,  sizeof (iqmvert_t), (void *) (paliashdr->vbovertofs + offsetof (iqmvert_t, norm)));
 		GL_VertexAttribPointerFunc  (2, 2, GL_FLOAT,			GL_FALSE, sizeof (iqmvert_t), (void *) (paliashdr->vbovertofs + offsetof (iqmvert_t, st)));
-		GL_VertexAttribPointerFunc  (3, 4, GL_FLOAT,			GL_FALSE, sizeof (iqmvert_t), (void *) (paliashdr->vbovertofs + offsetof (iqmvert_t, weight)));
+		GL_VertexAttribPointerFunc  (3, 4, GL_UNSIGNED_BYTE,	GL_TRUE,  sizeof (iqmvert_t), (void *) (paliashdr->vbovertofs + offsetof (iqmvert_t, weight)));
 		GL_VertexAttribIPointerFunc (4, 4, GL_UNSIGNED_BYTE,	          sizeof (iqmvert_t), (void *) (paliashdr->vbovertofs + offsetof (iqmvert_t, idx)));
 
 		buffers[1] = model->meshvbo;
