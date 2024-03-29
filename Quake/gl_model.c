@@ -3699,9 +3699,48 @@ static void MD5_BakeInfluences(const char *fname, bonepose_t *outposes, iqmvert_
 		Con_DWarning("%s uses up to %u influences per vertex (weakest: %g)\n", fname, maxinfluences, scaleimprecision);
 }
 
+static uint32_t HashVert (const vec3_t v)
+{
+	return COM_HashBlock (&v[0], 3 * sizeof (float));
+}
+
 static void MD5_ComputeNormals(iqmvert_t *vert, size_t numverts, unsigned short *indexes, size_t numindexes)
 {
-	size_t v, t;
+	size_t			v, t, hashsize;
+	int				*hashmap;
+	unsigned short	*weld;
+
+	hashsize = numverts * 2;
+	hashmap = (int *) calloc (hashsize, sizeof (*hashmap));
+	weld = (unsigned short *) malloc (numverts * sizeof (*weld));
+
+	for (v = 0; v < numverts; v++)
+	{
+		uint32_t pos = HashVert (vert[v].xyz) % hashsize;
+		uint32_t end = pos;
+
+		do
+		{
+			if (!hashmap[pos])
+			{
+				hashmap[pos] = v + 1;
+				weld[v] = v;
+				break;
+			}
+
+			t = hashmap[pos] - 1;
+			if (VectorCompare (vert[t].xyz, vert[v].xyz))
+			{
+				weld[v] = weld[t];
+				break;
+			}
+
+			++pos;
+			if (pos == hashsize)
+				pos = 0;
+		}
+		while (pos != end);
+	}
 
 	for (v = 0; v < numverts; v++)
 		vert[v].norm[0] = vert[v].norm[1] = vert[v].norm[2] = 0;
@@ -3709,9 +3748,9 @@ static void MD5_ComputeNormals(iqmvert_t *vert, size_t numverts, unsigned short 
 	for (t = 0; t < numindexes; t += 3)
 	{
 		vec3_t d1, d2, norm;
-		iqmvert_t *v0 = &vert[indexes[t+0]];
-		iqmvert_t *v1 = &vert[indexes[t+1]];
-		iqmvert_t *v2 = &vert[indexes[t+2]];
+		iqmvert_t *v0 = &vert[weld[indexes[t+0]]];
+		iqmvert_t *v1 = &vert[weld[indexes[t+1]]];
+		iqmvert_t *v2 = &vert[weld[indexes[t+2]]];
 
 		VectorSubtract(v1->xyz, v0->xyz, d1);
 		VectorSubtract(v2->xyz, v0->xyz, d2);
@@ -3723,7 +3762,15 @@ static void MD5_ComputeNormals(iqmvert_t *vert, size_t numverts, unsigned short 
 	}
 
 	for (v = 0; v < numverts; v++)
-		VectorNormalize(vert[v].norm);
+	{
+		if (v == weld[v])
+			VectorNormalize(vert[v].norm);
+		else
+			VectorCopy(vert[weld[v]].norm, vert[v].norm);
+	}
+
+	free (weld);
+	free (hashmap);
 }
 
 static unsigned int MD5_HackyModelFlags(const char *name)
