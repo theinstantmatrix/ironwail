@@ -25,8 +25,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 
-extern	const vec3_t	rgb_black = {0.f, 0.f, 0.f};
-extern	const vec3_t	rgb_white = {1.f, 1.f, 1.f};
+const vec3_t	rgb_black = {0.f, 0.f, 0.f};
+const vec3_t	rgb_white = {1.f, 1.f, 1.f};
 
 cvar_t		scr_conalpha = {"scr_conalpha", "0.5", CVAR_ARCHIVE}; //johnfitz
 cvar_t		scr_conbrightness = {"scr_conbrightness", "1.0", CVAR_ARCHIVE};
