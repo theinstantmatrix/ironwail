@@ -3517,26 +3517,26 @@ RAW ...
 We'll unpack the animation to separate framegroups (one-pose per, for consistency with most q1 models).
 */
 
-static qboolean MD5_ParseCheck(const char *s, const void **buffer)
+static qboolean MD5_ParseCheck(const char *s, const char **buffer)
 {
 	if (strcmp(com_token, s))
 		return false;
 	*buffer = COM_Parse(*buffer);
 	return true;
 }
-static size_t MD5_ParseUInt(const void **buffer)
+static size_t MD5_ParseUInt(const char **buffer)
 {
 	size_t i = SDL_strtoull(com_token, NULL, 0);
 	*buffer = COM_Parse(*buffer);
 	return i;
 }
-static long MD5_ParseSInt(const void **buffer)
+static long MD5_ParseSInt(const char **buffer)
 {
 	long i = SDL_strtol(com_token, NULL, 0);
 	*buffer = COM_Parse(*buffer);
 	return i;
 }
-static double MD5_ParseFloat(const void **buffer)
+static double MD5_ParseFloat(const char **buffer)
 {
 	double i = SDL_strtod(com_token, NULL);
 	*buffer = COM_Parse(*buffer);
@@ -3548,16 +3548,16 @@ static double MD5_ParseFloat(const void **buffer)
 #define MD5FLOAT() MD5_ParseFloat(&buffer)
 #define MD5CHECK(s) MD5_ParseCheck(s, &buffer)
 
-struct md5vertinfo_s
+typedef struct
 {
 	size_t firstweight;
 	unsigned int count;
-};
-struct md5weightinfo_s
+} md5vertinfo_t;
+typedef struct
 {
 	size_t bone;
 	vec4_t pos;
-};
+} md5weightinfo_t;
 
 static void GenMatrixPosQuat4Scale(const vec3_t pos, const vec4_t quat, const vec3_t scale, float result[12])
 {
@@ -3632,10 +3632,10 @@ static void Matrix3x4_RM_Transform4(const float *matrix, const float *vector, fl
 	product[1] = matrix[4]*vector[0] + matrix[5]*vector[1] + matrix[6]*vector[2] + matrix[7]*vector[3];
 	product[2] = matrix[8]*vector[0] + matrix[9]*vector[1] + matrix[10]*vector[2] + matrix[11]*vector[3];
 }
-static void MD5_BakeInfluences(const char *fname, bonepose_t *outposes, iqmvert_t *vert, struct md5vertinfo_s *vinfo, struct md5weightinfo_s *weight, size_t numverts, size_t numweights)
+static void MD5_BakeInfluences(const char *fname, bonepose_t *outposes, iqmvert_t *vert, md5vertinfo_t *vinfo, md5weightinfo_t *weight, size_t numverts, size_t numweights)
 {
 	size_t v, i, lowidx, k;
-	struct md5weightinfo_s *w;
+	md5weightinfo_t *w;
 	vec3_t pos;
 	float lowval, scale;
 	unsigned int maxinfluences = 0;
@@ -3808,28 +3808,28 @@ static unsigned int MD5_HackyModelFlags(const char *name)
 	return ret;
 }
 
-struct md5animctx_s
+typedef struct
 {
-	void *animfile;
-	const void *buffer;
+	char *animfile;
+	const char *buffer;
 	char fname[MAX_QPATH];
 	size_t numposes;
 	size_t numjoints;
 	bonepose_t *posedata;
-};
+} md5animctx_t;
 //This is split into two because aliashdr_t has silly trailing framegroup info.
-static void MD5Anim_Begin(struct md5animctx_s *ctx, const char *fname)
+static void MD5Anim_Begin(md5animctx_t *ctx, const char *fname)
 {
 	//Load an md5anim into it, if we can.
 	COM_StripExtension(fname, ctx->fname, sizeof(ctx->fname));
 	COM_AddExtension(ctx->fname, ".md5anim", sizeof(ctx->fname));
 	fname = ctx->fname;
-	ctx->animfile = COM_LoadMallocFile(fname, NULL);
+	ctx->animfile = (char *) COM_LoadMallocFile(fname, NULL);
 	ctx->numposes = 0;
 
 	if (ctx->animfile)
 	{
-		const void *buffer = COM_Parse(ctx->animfile);
+		const char *buffer = COM_Parse(ctx->animfile);
 		MD5EXPECT("MD5Version");
 		MD5EXPECT("10");
 		if (MD5CHECK("commandline"))	buffer = COM_Parse(buffer);
@@ -3843,14 +3843,15 @@ static void MD5Anim_Begin(struct md5animctx_s *ctx, const char *fname)
 		ctx->buffer = buffer;
 	}
 }
-static void MD5Anim_Load(struct md5animctx_s *ctx, boneinfo_t *bones, size_t numbones)
+static void MD5Anim_Load(md5animctx_t *ctx, boneinfo_t *bones, size_t numbones)
 {
+	typedef struct { unsigned int flags, offset;} md5animbase_t;
 	const char *fname = ctx->fname;
-	struct {unsigned int flags, offset;} *ab;
+	md5animbase_t *ab;
 	size_t rawcount;
 	float *raw, *r;
 	bonepose_t *outposes, *frameposes;
-	const void *buffer = COM_Parse(ctx->buffer);
+	const char *buffer = COM_Parse(ctx->buffer);
 	size_t j;
 
 	if (!buffer)
@@ -3864,10 +3865,10 @@ static void MD5Anim_Load(struct md5animctx_s *ctx, boneinfo_t *bones, size_t num
 	if (ctx->numjoints != numbones)
 		Sys_Error ("%s has incorrect bone count", fname);
 
-	raw = Z_Malloc(sizeof(*raw)*(rawcount+6));
-	ab = Z_Malloc(sizeof(*ab)*ctx->numjoints);
+	raw = (float *) Z_Malloc(sizeof(*raw)*(rawcount+6));
+	ab = (md5animbase_t *) Z_Malloc(sizeof(*ab)*ctx->numjoints);
 
-	ctx->posedata = outposes = Hunk_Alloc(sizeof(*outposes)*ctx->numjoints*ctx->numposes);
+	ctx->posedata = outposes = (bonepose_t *) Hunk_Alloc(sizeof(*outposes)*ctx->numjoints*ctx->numposes);
 	frameposes = (bonepose_t *) malloc (sizeof (*frameposes) * ctx->numjoints);
 
 
@@ -3974,24 +3975,24 @@ static void MD5Anim_Load(struct md5animctx_s *ctx, boneinfo_t *bones, size_t num
 }
 static void Mod_LoadMD5MeshModel (qmodel_t *mod, const char *buffer)
 {
-	const char				*fname = mod->name;
-	unsigned short			*poutindexes;
-	iqmvert_t				*poutvert;
-	int						start, end, total;
-	aliashdr_t				*outhdr, *surf;
-	size_t					hdrsize;
+	const char			*fname = mod->name;
+	unsigned short		*poutindexes;
+	iqmvert_t			*poutvert;
+	int					start, end, total;
+	aliashdr_t			*outhdr, *surf;
+	size_t				hdrsize;
 
-	bonepose_t				*outposes;
-	boneinfo_t				*outbones;
+	bonepose_t			*outposes;
+	boneinfo_t			*outbones;
 
-	size_t					numjoints, j;
-	size_t					nummeshes, m;
-	char					texname[MAX_QPATH];
-	struct md5vertinfo_s	*vinfo;
-	struct md5weightinfo_s	*weight;
-	size_t					numweights;
+	size_t				numjoints, j;
+	size_t				nummeshes, m;
+	char				texname[MAX_QPATH];
+	md5vertinfo_t		*vinfo;
+	md5weightinfo_t		*weight;
+	size_t				numweights;
 
-	struct md5animctx_s		anim = {NULL};
+	md5animctx_t		anim = {NULL};
 
 	start = Hunk_LowMark ();
 
@@ -4014,9 +4015,9 @@ static void Mod_LoadMD5MeshModel (qmodel_t *mod, const char *buffer)
 
 	hdrsize = sizeof(*outhdr) - sizeof(outhdr->frames);
 	hdrsize += sizeof(outhdr->frames)*anim.numposes;
-	outhdr = Hunk_Alloc(hdrsize*numjoints);
-	outbones = Hunk_Alloc(sizeof(*outbones)*numjoints);
-	outposes = Z_Malloc(sizeof(*outposes)*numjoints);
+	outhdr = (aliashdr_t *) Hunk_Alloc(hdrsize*numjoints);
+	outbones = (boneinfo_t *) Hunk_Alloc(sizeof(*outbones)*numjoints);
+	outposes = (bonepose_t *) Z_Malloc(sizeof(*outposes)*numjoints);
 
 	MD5EXPECT("{");
 	for (j = 0; j < numjoints; j++)
@@ -4156,8 +4157,8 @@ static void Mod_LoadMD5MeshModel (qmodel_t *mod, const char *buffer)
 		MD5EXPECT("numverts");
 		surf->numverts_vbo = surf->numverts = MD5UINT();
 
-		vinfo = Z_Malloc(sizeof(*vinfo)*surf->numverts);
-		poutvert = Hunk_Alloc(sizeof(*poutvert)*surf->numverts);
+		vinfo = (md5vertinfo_t *) Z_Malloc(sizeof(*vinfo)*surf->numverts);
+		poutvert = (iqmvert_t *) Hunk_Alloc(sizeof(*poutvert)*surf->numverts);
 		surf->vertexes = (byte*)poutvert-(byte*)surf;
 		surf->numposes = 1;
 		while (MD5CHECK("vert"))
@@ -4175,7 +4176,7 @@ static void Mod_LoadMD5MeshModel (qmodel_t *mod, const char *buffer)
 		MD5EXPECT("numtris");
 		surf->numtris = MD5UINT();
 		surf->numindexes = surf->numtris*3;
-		poutindexes = Hunk_Alloc(sizeof(*poutindexes)*surf->numindexes);
+		poutindexes = (unsigned short *) Hunk_Alloc(sizeof(*poutindexes)*surf->numindexes);
 		surf->indexes = (byte*)poutindexes-(byte*)surf;
 		while (MD5CHECK("tri"))
 		{
@@ -4195,7 +4196,7 @@ static void Mod_LoadMD5MeshModel (qmodel_t *mod, const char *buffer)
 		//md5 is a gpu-unfriendly interchange format. :(
 		MD5EXPECT("numweights");
 		numweights = MD5UINT();
-		weight = Z_Malloc(sizeof(*weight)*numweights);
+		weight = (md5weightinfo_t *) Z_Malloc(sizeof(*weight)*numweights);
 		while (MD5CHECK("weight"))
 		{
 			size_t idx = MD5UINT();
