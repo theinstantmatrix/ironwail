@@ -403,6 +403,18 @@ static qboolean Con_HasSelection (void)
 
 /*
 ================
+Con_SelectAll
+================
+*/
+void Con_SelectAll (void)
+{
+	Con_GetCurrentRange (&con_selection.begin, &con_selection.end);
+	while (Con_HasSelection () && Con_StrLen (con_selection.begin.line) == 0)
+		con_selection.begin.line++;
+}
+
+/*
+================
 Con_GetNormalizedSelection
 ================
 */
