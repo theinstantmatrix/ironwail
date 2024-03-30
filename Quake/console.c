@@ -96,7 +96,12 @@ typedef enum
 static conlink_t	**con_links = NULL;
 static conlink_t	*con_hotlink = NULL;
 
+static const double		DOUBLECLICK_TIME = 0.5;
+
+static double			con_mouseclickdelay = 0.0;
+static int				con_mouseclicks = 0;
 static conmouse_t		con_mousestate = CMS_NOTPRESSED;
+static conselection_t	con_mouseselection;
 static conselection_t	con_selection;
 
 cvar_t		con_notifytime = {"con_notifytime","3",CVAR_NONE};	//seconds
@@ -134,8 +139,12 @@ Con_StrLen
 */
 static size_t Con_StrLen (int line)
 {
-	const char *text = Con_GetLine (line);
-	size_t len = con_linewidth;
+	const char *text;
+	size_t len;
+	if (line > con_current)
+		return 0;
+	text = Con_GetLine (line);
+	len = con_linewidth;
 	while (len > 0 && (char)(text[len - 1] & 0x7f) == ' ')
 		len--;
 	return len;
@@ -440,19 +449,126 @@ static qboolean Con_GetNormalizedSelection (conofs_t *begin, conofs_t *end)
 
 /*
 ================
+Con_TestWordBoundary
+
+Returns:
+     < 0 if on a word boundary and non-whitespace characters are to the left
+       0 if not on a word boundary
+     > 0 if on a word boundary and non-whitespace characters are to the right
+================
+*/
+static int Con_TestWordBoundary (int pos, const char *text, int len)
+{
+	if (pos <= 0)
+		return 1;
+	if (pos >= len)
+		return -1;
+	return q_isspace (text[pos - 1] & 0x7f) - q_isspace (text[pos] & 0x7f);
+}
+
+int IntSign (int i)
+{
+	if (i < 0)
+		return -1;
+	if (i > 0)
+		return 1;
+	return i;
+}
+
+/*
+================
+Con_ApplyMouseSelection
+================
+*/
+static void Con_ApplyMouseSelection (void)
+{
+	const char	*line;
+	int			len;
+
+	con_selection = con_mouseselection;
+
+	line = Con_GetLine (con_selection.begin.line);
+	len = (int) Con_StrLen (con_selection.begin.line);
+
+	// Special case: if we're selecting whole words, the initial click was on a word boundary,
+	// and the current selection hasn't advanced towards the actual content (either left or right),
+	// then we nudge the starting point by one character so that the word adjacent to the initial click
+	// is always selected.
+	if (con_mouseclicks & 2)
+	{
+		int boundary = IntSign (Con_TestWordBoundary (con_selection.begin.col, line, len));
+		int dir = IntSign (Con_OfsCompare (&con_selection.end, &con_selection.begin));
+		if (boundary && boundary != dir)
+			con_selection.begin.col += boundary;
+	}
+
+	// Swap begin/end if necessary
+	if (Con_OfsCompare (&con_selection.begin, &con_selection.end) > 0)
+	{
+		conofs_t tmp = con_selection.begin;
+		con_selection.begin = con_selection.end;
+		con_selection.end = tmp;
+	}
+
+	// Selecting character by character? Nothing left to do
+	if (con_mouseclicks <= 1)
+		return;
+
+	// Do we actually have anything to select?
+	if (len == 0 && Con_OfsCompare (&con_selection.begin, &con_selection.end) == 0)
+		return;
+
+	// For click counts >= 2, we alternate between selecting whole words and whole lines
+	// Odd number of clicks: select whole lines
+	if (con_mouseclicks & 1)
+	{
+		con_selection.begin.col = 0;
+		con_selection.end.col = 0;
+		con_selection.end.line = q_min (con_selection.end.line, con_current) + 1;
+		return;
+	}
+
+	// Even number of clicks: select whole words
+
+	// Move begin marker to the first word boundary to its left
+	while (!Con_TestWordBoundary (con_selection.begin.col, line, len))
+		--con_selection.begin.col;
+
+	// Move end marker to the first word boundary to its right
+	if (con_selection.end.line <= con_current)
+	{
+		line = Con_GetLine (con_selection.end.line);
+		len = (int) Con_StrLen (con_selection.end.line);
+		while (!Con_TestWordBoundary (con_selection.end.col, line, len))
+			++con_selection.end.col;
+	}
+}
+
+/*
+================
 Con_SetMouseState
 ================
 */
 static void Con_SetMouseState (conmouse_t state)
 {
+	conofs_t pos;
+
 	if (con_mousestate == state)
 		return;
 
 	switch (state)
 	{
 	case CMS_PRESSED:
-		Con_GetMousePos (&con_selection.begin, CT_NEAREST);
-		con_selection.end = con_selection.begin;
+		Con_GetMousePos (&pos, CT_NEAREST);
+		if (con_mouseclicks == 0 || con_mouseclickdelay >= DOUBLECLICK_TIME || Con_OfsCompare (&pos, &con_mouseselection.end) != 0)
+			con_mouseclicks = 1;
+		else
+			con_mouseclicks++;
+		con_mouseclickdelay = 0.0;
+		con_mouseselection.begin = con_mouseselection.end = pos;
+		Con_ApplyMouseSelection ();
+		if (con_mouseclicks >= 2)
+			VID_SetMouseCursor (MOUSECURSOR_IBEAM);
 		break;
 
 	case CMS_DRAGGING:
@@ -488,8 +604,9 @@ void Con_Mousemove (int x, int y)
 	}
 	else
 	{
-		Con_ScreenToOffset (x, y, &con_selection.end, CT_NEAREST);
-		if (Con_OfsCompare (&con_selection.begin, &con_selection.end) != 0)
+		Con_ScreenToOffset (x, y, &con_mouseselection.end, CT_NEAREST);
+		Con_ApplyMouseSelection ();
+		if (Con_OfsCompare (&con_mouseselection.begin, &con_mouseselection.end) != 0)
 			Con_SetMouseState (CMS_DRAGGING);
 	}
 }
@@ -525,6 +642,8 @@ static void Con_UpdateMouseState (void)
 		Con_SetMouseState (CMS_NOTPRESSED);
 	else if (con_mousestate == CMS_NOTPRESSED)
 		Con_SetMouseState (CMS_PRESSED);
+
+	con_mouseclickdelay += host_rawframetime;
 }
 
 /*
