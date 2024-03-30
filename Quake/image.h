@@ -24,6 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #define GL_IMAGE_H
 
 //image.h -- image reading / writing
+enum srcformat;
 
 //be sure to free the hunk after using this loading function
 byte *Image_LoadImage (const char *name, int *width, int *height, enum srcformat *fmt);
