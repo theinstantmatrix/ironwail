@@ -494,7 +494,7 @@ static void Con_ApplyMouseSelection (void)
 	// and the current selection hasn't advanced towards the actual content (either left or right),
 	// then we nudge the starting point by one character so that the word adjacent to the initial click
 	// is always selected.
-	if (con_mouseclicks & 2)
+	if (con_mouseclicks == 2)
 	{
 		int boundary = IntSign (Con_TestWordBoundary (con_selection.begin.col, line, len));
 		int dir = IntSign (Con_OfsCompare (&con_selection.end, &con_selection.begin));
@@ -518,9 +518,8 @@ static void Con_ApplyMouseSelection (void)
 	if (len == 0 && Con_OfsCompare (&con_selection.begin, &con_selection.end) == 0)
 		return;
 
-	// For click counts >= 2, we alternate between selecting whole words and whole lines
-	// Odd number of clicks: select whole lines
-	if (con_mouseclicks & 1)
+	// Triple click: select whole lines
+	if (con_mouseclicks >= 3)
 	{
 		con_selection.begin.col = 0;
 		con_selection.end.col = 0;
@@ -528,7 +527,7 @@ static void Con_ApplyMouseSelection (void)
 		return;
 	}
 
-	// Even number of clicks: select whole words
+	// Double click: select whole words
 
 	// Move begin marker to the first word boundary to its left
 	while (!Con_TestWordBoundary (con_selection.begin.col, line, len))
@@ -564,6 +563,9 @@ static void Con_SetMouseState (conmouse_t state)
 			con_mouseclicks = 1;
 		else
 			con_mouseclicks++;
+		// For click counts >= 2, we alternate between selecting whole words (2) and whole lines (3)
+		if (con_mouseclicks == 4)
+			con_mouseclicks = 2;
 		con_mouseclickdelay = 0.0;
 		con_mouseselection.begin = con_mouseselection.end = pos;
 		Con_ApplyMouseSelection ();
