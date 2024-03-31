@@ -530,6 +530,8 @@ static void Con_ApplyMouseSelection (void)
 	// Double click: select whole words
 
 	// Move begin marker to the first word boundary to its left
+	line = Con_GetLine (con_selection.begin.line);
+	len = (int) Con_StrLen (con_selection.begin.line);
 	while (!Con_TestWordBoundary (con_selection.begin.col, line, len))
 		--con_selection.begin.col;
 
