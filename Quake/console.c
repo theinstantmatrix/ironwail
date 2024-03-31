@@ -44,6 +44,9 @@ float		con_cursorspeed = 4;
 #define		CON_MINSIZE  16384 //johnfitz -- old default, now the minimum size
 #define		CON_MARGIN   1
 
+#define		CON_SCROLL_ZONE			(CHARSIZE * 2)
+#define		CON_MAX_SCROLL_SPEED	32.f
+
 int		con_buffersize; //johnfitz -- user can now override default
 
 qboolean 	con_forcedup;		// because no entities to refresh
@@ -53,6 +56,9 @@ int		con_backscroll;		// lines up from bottom to display
 int		con_current;		// where next message will be printed
 int		con_x;				// offset in current line for next print
 char		*con_text = NULL;
+
+static float	con_scrollspeed;
+static float	con_scrolldelta;
 
 typedef struct
 {
@@ -103,6 +109,8 @@ static int				con_mouseclicks = 0;
 static conmouse_t		con_mousestate = CMS_NOTPRESSED;
 static conselection_t	con_mouseselection;
 static conselection_t	con_selection;
+static int				con_clickx;
+static int				con_clicky;
 
 cvar_t		con_notifytime = {"con_notifytime","3",CVAR_NONE};	//seconds
 cvar_t		con_logcenterprint = {"con_logcenterprint", "1", CVAR_NONE}; //johnfitz
@@ -171,20 +179,17 @@ static void Con_ScreenToCanvas (int x, int y, int *outx, int *outy)
 	*outy = y;
 }
 
-
 /*
 ================
-Con_ScreenToOffset
+Con_CanvasToOffset
 
-Converts screen (pixel) coordinates to a console offset
+Converts canvas coordinates to a console offset
 Returns true if the offset is inside the visible portion of the console
 ================
 */
-static qboolean Con_ScreenToOffset (int x, int y, conofs_t *ofs, contest_t testmode)
+static qboolean Con_CanvasToOffset (int x, int y, conofs_t *ofs, contest_t testmode)
 {
 	qboolean ret = true;
-
-	Con_ScreenToCanvas (x, y, &x, &y);
 
 // Start from the bottom of the console
 	y = vid.conheight - y;
@@ -238,6 +243,20 @@ static qboolean Con_ScreenToOffset (int x, int y, conofs_t *ofs, contest_t testm
 	ofs->col = x;
 
 	return ret;
+}
+
+/*
+================
+Con_ScreenToOffset
+
+Converts screen (pixel) coordinates to a console offset
+Returns true if the offset is inside the visible portion of the console
+================
+*/
+static qboolean Con_ScreenToOffset (int x, int y, conofs_t *ofs, contest_t testmode)
+{
+	Con_ScreenToCanvas (x, y, &x, &y);
+	return Con_CanvasToOffset (x, y, ofs, testmode);
 }
 
 /*
@@ -552,6 +571,7 @@ Con_SetMouseState
 */
 static void Con_SetMouseState (conmouse_t state)
 {
+	int x, y;
 	conofs_t pos;
 
 	if (con_mousestate == state)
@@ -560,7 +580,10 @@ static void Con_SetMouseState (conmouse_t state)
 	switch (state)
 	{
 	case CMS_PRESSED:
-		Con_GetMousePos (&pos, CT_NEAREST);
+		SDL_GetMouseState (&x, &y);
+		Con_ScreenToCanvas (x, y, &con_clickx, &con_clicky);
+		Con_CanvasToOffset (con_clickx, con_clicky, &pos, CT_NEAREST);
+
 		if (con_mouseclicks == 0 || con_mouseclickdelay >= DOUBLECLICK_TIME || Con_OfsCompare (&pos, &con_mouseselection.end) != 0)
 			con_mouseclicks = 1;
 		else
@@ -570,7 +593,9 @@ static void Con_SetMouseState (conmouse_t state)
 			con_mouseclicks = 2;
 		con_mouseclickdelay = 0.0;
 		con_mouseselection.begin = con_mouseselection.end = pos;
+
 		Con_ApplyMouseSelection ();
+
 		if (con_mouseclicks >= 2)
 			VID_SetMouseCursor (MOUSECURSOR_IBEAM);
 		break;
@@ -583,6 +608,8 @@ static void Con_SetMouseState (conmouse_t state)
 	case CMS_NOTPRESSED:
 		if (con_mousestate != CMS_DRAGGING && con_hotlink && !Sys_Explore (con_hotlink->path))
 			S_LocalSound ("misc/menu2.wav");
+		con_scrolldelta = 0.f;
+		con_scrollspeed = 0.f;
 		break;
 
 	default:
@@ -608,10 +635,41 @@ void Con_Mousemove (int x, int y)
 	}
 	else
 	{
-		Con_ScreenToOffset (x, y, &con_mouseselection.end, CT_NEAREST);
+		int cx, cy, delta;
+		float frac;
+
+		Con_ScreenToCanvas (x, y, &cx, &cy);
+		Con_CanvasToOffset (cx, cy, &con_mouseselection.end, CT_NEAREST);
 		Con_ApplyMouseSelection ();
 		if (Con_OfsCompare (&con_mouseselection.begin, &con_mouseselection.end) != 0)
 			Con_SetMouseState (CMS_DRAGGING);
+
+		// Compute distance inside the auto-scroll range
+		delta = cy + con_vislines / 2 - vid.conheight;
+		if (abs (delta) < con_vislines / 2 - CON_SCROLL_ZONE)
+			delta = 0;
+		else
+			delta -= IntSign (delta) * (con_vislines / 2 - CON_SCROLL_ZONE);
+		delta = CLAMP (-CON_SCROLL_ZONE, delta, CON_SCROLL_ZONE);
+
+		if (delta < 0)
+		{
+			// If the initial click was close to the top (inside the scroll range),
+			// we don't want to immediately start scrolling.
+			// Once we've started scrolling we gradually relax the restriction.
+			// NOTE: This is not an issue on the bottom because of the input line and margin.
+			int moved = cy - con_clicky;
+			int scrolled = q_min (con_mouseselection.end.line - con_mouseselection.begin.line, 0) * CHARSIZE;
+			delta = q_max (delta, moved + scrolled / 4);
+			delta = q_min (delta, 0);
+		}
+
+		// Compute scroll speed
+		frac = delta / (float) CON_SCROLL_ZONE;
+		frac *= fabs (frac); // quadratic easing
+		con_scrollspeed = -CON_MAX_SCROLL_SPEED * frac;
+		if (!delta)
+			con_scrolldelta = 0.0f;
 	}
 }
 
@@ -648,6 +706,15 @@ static void Con_UpdateMouseState (void)
 		Con_SetMouseState (CMS_PRESSED);
 
 	con_mouseclickdelay += host_rawframetime;
+
+	// Handle auto-scrolling
+	con_scrolldelta += con_scrollspeed * host_rawframetime;
+	if (fabs (con_scrolldelta) >= 1.0f)
+	{
+		int lines = (int)con_scrolldelta;
+		Con_Scroll (lines);
+		con_scrolldelta -= lines;
+	}
 }
 
 /*
