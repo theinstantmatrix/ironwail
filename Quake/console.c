@@ -2284,15 +2284,15 @@ void Con_DrawSelectionHighlight (int x, int y, int line)
 	end.line = line;
 	end.col = len;
 
-	if (!Con_IntersectRanges (&begin, &end, &selbegin, &selend))
-		return;
-
 	// Highlight line ends (as in Notepad, Visual Studio etc.)
 	if (end.line != selend.line && end.col == len)
 		end.col++;
 
 	// ...unless we would end up overlapping the console margin
 	end.col = q_min (end.col, con_linewidth);
+
+	if (!Con_IntersectRanges (&begin, &end, &selbegin, &selend))
+		return;
 
 	Draw_Fill (x + begin.col*8, y, (end.col-begin.col)*8, 8, 220, 1.f);
 }
