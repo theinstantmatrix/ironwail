@@ -509,6 +509,10 @@ static void Con_ApplyMouseSelection (void)
 	line = Con_GetLine (con_selection.begin.line);
 	len = (int) Con_StrLen (con_selection.begin.line);
 
+	// Clamp starting point to the end of the actual content (one character past it)
+	// so that double-clicking beyond the end of the line selects the last word
+	con_selection.begin.col = q_min (con_selection.begin.col, len);
+
 	// Special case: if we're selecting whole words, the initial click was on a word boundary,
 	// and the current selection hasn't advanced towards the actual content (either left or right),
 	// then we nudge the starting point by one character so that the word adjacent to the initial click
