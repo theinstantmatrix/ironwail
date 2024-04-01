@@ -537,12 +537,15 @@ static void Con_ApplyMouseSelection (void)
 	if (con_mouseclicks <= 1)
 		return;
 
-	// Do we actually have anything to select?
-	if (len == 0 && Con_OfsCompare (&con_selection.begin, &con_selection.end) == 0)
+	// Quadruple click: select whole buffer
+	if (con_mouseclicks >= 4)
+	{
+		Con_SelectAll ();
 		return;
+	}
 
 	// Triple click: select whole lines
-	if (con_mouseclicks >= 3)
+	if (con_mouseclicks == 3)
 	{
 		con_selection.begin.col = 0;
 		con_selection.end.col = 0;
@@ -592,9 +595,6 @@ static void Con_SetMouseState (conmouse_t state)
 			con_mouseclicks = 1;
 		else
 			con_mouseclicks++;
-		// For click counts >= 2, we alternate between selecting whole words (2) and whole lines (3)
-		if (con_mouseclicks == 4)
-			con_mouseclicks = 2;
 		con_mouseclickdelay = 0.0;
 		con_mouseselection.begin = con_mouseselection.end = pos;
 
