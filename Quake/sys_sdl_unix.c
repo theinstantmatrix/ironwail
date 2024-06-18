@@ -745,6 +745,46 @@ void Sys_FindClose (findfile_t *find)
 	}
 }
 
+/*
+=================
+Sys_GetParentProcessName
+=================
+*/
+static qboolean Sys_GetParentProcessName (char *dst, size_t dstsize)
+{
+#ifdef __linux__
+	char link[MAX_OSPATH];
+	q_snprintf (link, sizeof (link), "/proc/%d/exe", getppid ());
+	if (readlink (link, dst, dstsize) < 0)
+		return false;
+	dst[dstsize - 1] = '\0';
+	return true;
+#else
+	return false;
+#endif
+}
+
+/*
+=================
+Sys_IsStartedFromMapEditor
+
+Returns true if the process was started from TrenchBroom
+=================
+*/
+qboolean Sys_IsStartedFromMapEditor (void)
+{
+	char path[MAX_OSPATH];
+	const char *slash, *exe;
+
+	if (!Sys_GetParentProcessName (path, sizeof (path)))
+		return false;
+
+	slash = strrchr (path, '/');
+	exe = slash ? slash + 1 : path;
+
+	return q_strcasestr (exe, "trenchbroom") != NULL || q_strcasestr (exe, "jack") != NULL;
+}
+
 void Sys_Init (void)
 {
 	const char* term = getenv("TERM");

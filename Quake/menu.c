@@ -2966,39 +2966,6 @@ static const char *VID_Menu_GetParticlesDesc (void)
 	}
 }
 
-enum
-{
-	ALPHAMODE_BASIC,
-	ALPHAMODE_SORTED,
-	ALPHAMODE_OIT,
-
-	ALPHAMODE_COUNT
-};
-
-/*
-================
-VID_Menu_GetAlphaMode
-================
-*/
-static int VID_Menu_GetAlphaMode (void)
-{
-	if (r_oit.value)
-		return ALPHAMODE_OIT;
-	return r_alphasort.value ? ALPHAMODE_SORTED : ALPHAMODE_BASIC;
-}
-
-/*
-================
-VID_Menu_SetAlphaMode
-================
-*/
-static void VID_Menu_SetAlphaMode (int mode)
-{
-	Cvar_SetValueQuick (&r_oit, mode == ALPHAMODE_OIT);
-	if (mode != ALPHAMODE_OIT)
-		Cvar_SetValueQuick (&r_alphasort, mode == ALPHAMODE_SORTED);
-}
-
 /*
 ================
 VID_Menu_ChooseNextAlphaMode
@@ -3006,7 +2973,7 @@ VID_Menu_ChooseNextAlphaMode
 */
 static void VID_Menu_ChooseNextAlphaMode (int dir)
 {
-	VID_Menu_SetAlphaMode ((VID_Menu_GetAlphaMode () + ALPHAMODE_COUNT + dir) % ALPHAMODE_COUNT);
+	R_SetAlphaMode ((R_GetAlphaMode () + ALPHAMODE_COUNT + dir) % ALPHAMODE_COUNT);
 }
 
 /*
@@ -3016,11 +2983,11 @@ VID_Menu_GetAlphaModeDesc
 */
 static const char *VID_Menu_GetAlphaModeDesc (void)
 {
-	switch (VID_Menu_GetAlphaMode ())
+	switch (R_GetAlphaMode ())
 	{
 	case ALPHAMODE_BASIC:		return "Basic";
 	case ALPHAMODE_SORTED:		return "Dynamic";
-	case ALPHAMODE_OIT:		return "Modern";
+	case ALPHAMODE_OIT:			return "Modern";
 	default:					return "";
 	}
 }

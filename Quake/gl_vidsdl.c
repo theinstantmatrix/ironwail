@@ -1117,7 +1117,7 @@ static void GL_SetStateEx (unsigned mask, unsigned force)
 				glBlendFunc(GL_ONE, GL_ZERO);
 				break;
 			case GLS_BLEND_ALPHA_OIT:
-				if (r_oit.value)
+				if (R_GetEffectiveAlphaMode () == ALPHAMODE_OIT)
 				{
 					GL_BlendFunciFunc(0, GL_ONE, GL_ONE); // accum
 					GL_BlendFunciFunc(1, GL_ZERO, GL_ONE_MINUS_SRC_COLOR); // revealage

@@ -537,7 +537,26 @@ void SV_PushMove (edict_t *pusher, float movetime)
 			{
 				check->v.origin[2] += DIST_EPSILON;
 				if (!SV_TestEntityPosition (check))
+				{
+					// notify developer about potential issue
+					if (map_checks.value || developer.value)
+					{
+						vec3_t check_center, pusher_center;
+
+						VectorAdd (check->v.absmin, check->v.absmax, check_center);
+						VectorScale (check_center, 0.5f, check_center);
+						VectorAdd (pusher->v.absmin, pusher->v.absmax, pusher_center);
+						VectorScale (pusher_center, 0.5f, pusher_center);
+
+						Con_Warning ("sv_gameplayfix_elevators nudged %s #%d at (%.0f %.0f %.0f) above %s #%d at (%.0f %.0f %.0f)\n",
+							PR_GetString (check->v.classname), NUM_FOR_EDICT (check), check_center[0], check_center[1], check_center[2],
+							PR_GetString (pusher->v.classname), NUM_FOR_EDICT (pusher), pusher_center[0], pusher_center[1], pusher_center[2]
+						);
+					}
+
+					// move on to next entity
 					continue;
+				}
 			}
 
 			VectorCopy (entorig, check->v.origin);

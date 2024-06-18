@@ -753,7 +753,7 @@ static void R_DrawParticles_Real (qboolean alpha, qboolean showtris)
 	GL_BeginGroup ("Particles");
 
 	dither = (softemu == SOFTEMU_COARSE && !showtris);
-	oit = (alpha && r_oit.value != 0.f);
+	oit = (alpha && R_GetEffectiveAlphaMode () == ALPHAMODE_OIT);
 	GL_UseProgram (glprogs.particles[oit][dither]);
 
 	// compensate for apparent size of different particle textures

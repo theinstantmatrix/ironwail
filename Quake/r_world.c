@@ -308,7 +308,7 @@ static void R_AddBModelCall (int index, int first_instance, int num_instances, t
 		tx = fb = whitetexture;
 	}
 
-	if (!gl_zfix.value)
+	if (!gl_zfix.value || map_checks.value)
 		zfix = 0;
 
 	flags = zfix | ((fb != NULL) << 1) | ((r_fullbright_cheatsafe != false) << 2);
@@ -407,7 +407,7 @@ static void R_DrawBrushModels_Real (entity_t **ents, int count, brushpass_t pass
 		count = countof(bmodel_instances);
 	}
 
-	oit = translucent && r_oit.value != 0.f;
+	oit = translucent && R_GetEffectiveAlphaMode () == ALPHAMODE_OIT;
 	switch (pass)
 	{
 	default:
@@ -550,7 +550,7 @@ void R_DrawBrushModels_Water (entity_t **ents, int count, qboolean translucent)
 	else
 		state |= GLS_BLEND_OPAQUE;
 
-	oit = translucent && r_oit.value != 0.f;
+	oit = translucent && R_GetEffectiveAlphaMode () == ALPHAMODE_OIT;
 	if (cl.worldmodel->haslitwater && r_litwater.value)
 		program = glprogs.world[oit][q_max(0, (int)softemu - 1)][WORLDSHADER_WATER];
 	else
@@ -661,7 +661,7 @@ void R_DrawBrushModels (entity_t **ents, int count)
 	if (!count)
 		return;
 	translucent = (ents[0] != &cl_entities[0]) && !ENTALPHA_OPAQUE (ents[0]->alpha);
-	if (!translucent || r_oit.value)
+	if (!translucent || R_GetEffectiveAlphaMode () == ALPHAMODE_OIT)
 	{
 		R_DrawBrushModels_Real (ents, count, BP_SOLID, translucent);
 		R_DrawBrushModels_Real (ents, count, BP_ALPHATEST, translucent);

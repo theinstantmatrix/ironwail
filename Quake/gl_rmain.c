@@ -568,6 +568,43 @@ void GL_DepthRange (zrange_t range)
 	}
 }
 
+/*
+=============
+R_GetAlphaMode
+=============
+*/
+alphamode_t R_GetAlphaMode (void)
+{
+	if (r_oit.value)
+		return ALPHAMODE_OIT;
+	return r_alphasort.value ? ALPHAMODE_SORTED : ALPHAMODE_BASIC;
+}
+
+/*
+=============
+R_GetEffectiveAlphaMode
+=============
+*/
+alphamode_t R_GetEffectiveAlphaMode (void)
+{
+	if (map_checks.value)
+		return ALPHAMODE_BASIC;
+	return R_GetAlphaMode ();
+}
+
+/*
+=============
+R_SetAlphaMode
+=============
+*/
+void R_SetAlphaMode (alphamode_t mode)
+{
+	Cvar_SetValueQuick (&r_oit, mode == ALPHAMODE_OIT);
+	if (mode != ALPHAMODE_OIT)
+		Cvar_SetValueQuick (&r_alphasort, mode == ALPHAMODE_SORTED);
+}
+
+
 //==============================================================================
 //
 // SETUP FRAME
@@ -597,7 +634,7 @@ static void R_SortEntities (void)
 	int i, j, pass;
 	int bins[1 << (MODSORT_BITS/2)];
 	int typebins[mod_numtypes*2];
-	qboolean alphasort = r_alphasort.value && !r_oit.value;
+	alphamode_t alphamode = R_GetEffectiveAlphaMode ();
 
 	if (!r_drawentities.value)
 		cl_numvisedicts = 0;
@@ -624,7 +661,7 @@ static void R_SortEntities (void)
 		entity_t *ent = cl_visedicts[i];
 		qboolean translucent = !ENTALPHA_OPAQUE (ent->alpha);
 
-		if (translucent && alphasort)
+		if (translucent && alphamode == ALPHAMODE_SORTED)
 		{
 			float dist, delta;
 			vec3_t mins, maxs;
@@ -638,7 +675,7 @@ static void R_SortEntities (void)
 			dist = sqrt (dist);
 			visedict_keys[i] = ~CLAMP (0, (int)dist, MODSORT_MASK);
 		}
-		else if (translucent && !r_oit.value)
+		else if (translucent && alphamode != ALPHAMODE_OIT)
 		{
 			// Note: -1 (0xfffff) for non-static entities (firstleaf=0),
 			// so they are sorted after static ones
@@ -845,7 +882,7 @@ GL_NeedsPostprocess
 */
 qboolean GL_NeedsPostprocess (void)
 {
-	return vid_gamma.value != 1.f || vid_contrast.value != 1.f || softemu || r_oit.value;
+	return vid_gamma.value != 1.f || vid_contrast.value != 1.f || softemu || R_GetEffectiveAlphaMode () == ALPHAMODE_OIT;
 }
 
 /*
@@ -1676,7 +1713,7 @@ static void R_BeginTranslucency (void)
 
 	GL_BeginGroup ("Translucent objects");
 
-	if (r_oit.value)
+	if (R_GetEffectiveAlphaMode () == ALPHAMODE_OIT)
 	{
 		GL_BindFramebufferFunc (GL_FRAMEBUFFER, framesetup.oit_fbo);
 		GL_ClearBufferfvFunc (GL_COLOR, 0, zeroes);
@@ -1696,7 +1733,7 @@ R_EndTranslucency
 */
 static void R_EndTranslucency (void)
 {
-	if (r_oit.value)
+	if (R_GetEffectiveAlphaMode () == ALPHAMODE_OIT)
 	{
 		GL_BeginGroup  ("OIT resolve");
 

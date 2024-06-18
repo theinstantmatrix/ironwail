@@ -81,6 +81,7 @@ cvar_t	coop = {"coop","0",CVAR_NONE};			// 0 or 1
 cvar_t	pausable = {"pausable","1",CVAR_NONE};
 
 cvar_t	developer = {"developer","0",CVAR_NONE};
+cvar_t	map_checks = {"map_checks","0",CVAR_NONE};
 
 cvar_t	temp1 = {"temp1","0",CVAR_NONE};
 
@@ -131,6 +132,21 @@ static void Max_Fps_f (cvar_t *var)
 		if (var->value > 72)
 			Con_Warning ("host_maxfps above 72 breaks physics.\n");
 	}
+}
+
+/*
+================
+Map_Checks_f -- called when map_checks cvar changes
+================
+*/
+static void Map_Checks_f (cvar_t *var)
+{
+	static qboolean showed_message = false;
+	if (!var->value || showed_message)
+		return;
+	showed_message = true;
+	Con_SafePrintf ("\x02Note: ");
+	Con_SafePrintf ("%s overrides gl_zfix, r_oit, and r_alphasort\n", var->name);
 }
 
 /*
@@ -374,6 +390,8 @@ void Host_InitLocal (void)
 	Cvar_SetCallback (&noexit, Host_Callback_Notify);
 	Cvar_RegisterVariable (&skill);
 	Cvar_RegisterVariable (&developer);
+	Cvar_RegisterVariable (&map_checks);
+	Cvar_SetCallback (&map_checks, Map_Checks_f);
 	Cvar_RegisterVariable (&coop);
 	Cvar_RegisterVariable (&deathmatch);
 
@@ -1430,6 +1448,15 @@ void Host_Init (void)
 
 	host_initialized = true;
 	Con_Printf ("\n========= Quake Initialized =========\n\n");
+
+	if (!COM_CheckParm ("-nomapchecks") && Sys_IsStartedFromMapEditor ())
+	{
+		Con_Printf (
+			"Level editing environment detected, enabling map_checks\n"
+			"(pass -nomapchecks or set map_checks to 0 to disable)\n"
+		);
+		Cvar_SetValueQuick (&map_checks, 1.f);
+	}
 
 	if (cls.state != ca_dedicated)
 	{

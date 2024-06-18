@@ -28,6 +28,8 @@ typedef struct steamgame_s steamgame_t;
 
 void Sys_Init (void);
 
+qboolean Sys_IsStartedFromMapEditor (void);
+
 // retrieves the directory where *Steam* is installed (not Steam Quake!)
 qboolean Sys_GetSteamDir (char *path, size_t pathsize);
 

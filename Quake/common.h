@@ -313,6 +313,7 @@ void COM_AddGameDirectory (const char *dir);
 void COM_SwitchGame (const char *paths);
 
 const char *COM_SkipPath (const char *pathname);
+const char *COM_SkipSpace (const char *str);
 void COM_StripExtension (const char *in, char *out, size_t outsize);
 void COM_FileBase (const char *in, char *out, size_t outsize);
 void COM_AddExtension (char *path, const char *extension, size_t len);
