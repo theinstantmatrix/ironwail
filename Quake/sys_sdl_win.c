@@ -22,6 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
 #include "quakedef.h"
+#include "steam.h"
 
 #ifndef MICROSOFT_WINDOWS_WINBASE_H_DEFINE_INTERLOCKED_CPLUSPLUS_OVERLOADS
 #define MICROSOFT_WINDOWS_WINBASE_H_DEFINE_INTERLOCKED_CPLUSPLUS_OVERLOADS 0
@@ -418,6 +419,17 @@ static qboolean Sys_GetNightdiveDir (char *path, size_t pathsize)
 qboolean Sys_GetSteamQuakeUserDir (char *path, size_t pathsize, const char *library)
 {
 	return Sys_GetNightdiveDir (path, pathsize);
+}
+
+qboolean Sys_GetSteamAPILibraryPath (char *path, size_t pathsize, const steamgame_t *game)
+{
+#ifdef _WIN64
+	char installdir[MAX_OSPATH];
+	if (!Steam_ResolvePath (installdir, sizeof (installdir), game))
+		return false;
+	return (size_t) q_snprintf (path, pathsize, "%s/rerelease/steam_api64.dll", installdir) < pathsize;
+#endif
+	return false;
 }
 
 qboolean Sys_GetGOGQuakeEnhancedUserDir (char *path, size_t pathsize)
@@ -1062,4 +1074,21 @@ void Sys_ActivateKeyFilter (qboolean active)
 		if (!key_hook)
 			Sys_Printf ("Warning: SetWindowsHookExW failed (%lu)\n", GetLastError ());
 	}
+}
+
+void *Sys_LoadLibrary (const char *path)
+{
+	wchar_t wpath[MAX_PATH];
+	UTF8ToWideString (path, wpath, countof (wpath));
+	return (void *) LoadLibraryW (wpath);
+}
+
+void *Sys_GetLibraryFunction (void *lib, const char *func)
+{
+	return GetProcAddress ((HMODULE) lib, func);
+}
+
+void Sys_CloseLibrary (void *lib)
+{
+	FreeLibrary ((HMODULE) lib);
 }

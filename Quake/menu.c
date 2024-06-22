@@ -1410,6 +1410,7 @@ void M_SinglePlayer_Key (int key)
 			Cbuf_AddText ("maxplayers 1\n");
 			Cbuf_AddText ("deathmatch 0\n"); //johnfitz
 			Cbuf_AddText ("coop 0\n"); //johnfitz
+			Cbuf_AddText ("campaign 1\n");
 			Cbuf_AddText ("map start\n");
 			break;
 
@@ -2201,6 +2202,7 @@ void M_Skill_Key (int key)
 			Cbuf_AddText ("maxplayers 1\n");
 			Cbuf_AddText ("deathmatch 0\n"); //johnfitz
 			Cbuf_AddText ("coop 0\n"); //johnfitz
+			Cbuf_AddText ("campaign 0\n");
 			Cbuf_AddText (va ("map \"%s\"\n", m_skill_mapname));
 		}
 		break;

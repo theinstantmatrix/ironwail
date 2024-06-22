@@ -3018,6 +3018,10 @@ static void COM_InitBaseDir (void)
 			else if (!Sys_GetSteamQuakeUserDir (com_nightdivedir, sizeof (com_nightdivedir), steamquake.library))
 				com_nightdivedir[0] = '\0';
 		}
+		else
+		{
+			memset (&steamquake, 0, sizeof (steamquake));
+		}
 		if (steam)
 			goto storesetup;
 	}
@@ -3075,6 +3079,9 @@ storesetup:
 		else
 			flavor = remastered[0] ? QUAKE_FLAVOR_REMASTERED : QUAKE_FLAVOR_ORIGINAL;
 		q_strlcpy (path, flavor == QUAKE_FLAVOR_REMASTERED ? remastered : original, sizeof (path));
+
+		if (steamquake.appid)
+			Steam_Init (&steamquake);
 
 		if (COM_SetBaseDir (path))
 		{

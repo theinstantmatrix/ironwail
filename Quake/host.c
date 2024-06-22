@@ -24,6 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 #include "bgmusic.h"
+#include "steam.h"
 #include <setjmp.h>
 
 /*
@@ -967,6 +968,8 @@ void Host_ServerFrame (void)
 
 typedef struct summary_s {
 	struct {
+		int		players;
+		int		max_players;
 		int		skill;
 		int		monsters;
 		int		total_monsters;
@@ -975,6 +978,20 @@ typedef struct summary_s {
 	}			stats;
 	char		map[countof (cl.mapname)];
 } summary_t;
+
+/*
+==================
+CountActiveClients
+==================
+*/
+static int CountActiveClients (void)
+{
+	int i, active;
+	for (i = active = 0; i < cl.maxclients; i++)
+		if (cl.scores[i].name[0])
+			active++;
+	return active;
+}
 
 /*
 ==================
@@ -991,6 +1008,8 @@ static void GetGameSummary (summary_t *s)
 	else
 	{
 		q_strlcpy (s->map, cl.mapname, countof (s->map));
+		s->stats.players        = CountActiveClients ();
+		s->stats.max_players    = cl.maxclients;
 		s->stats.skill          = (int) skill.value;
 		s->stats.monsters       = cl.stats[STAT_MONSTERS];
 		s->stats.total_monsters = cl.stats[STAT_TOTALMONSTERS];
@@ -1007,7 +1026,7 @@ UpdateWindowTitle
 static void UpdateWindowTitle (void)
 {
 	static float timeleft = 0.f;
-	static summary_t last;
+	static summary_t last = {{-1}}; // negative value to force initial update
 	summary_t current;
 
 	timeleft -= host_frametime;
@@ -1039,10 +1058,19 @@ static void UpdateWindowTitle (void)
 			current.stats.secrets, current.stats.total_secrets
 		);
 		VID_SetWindowTitle (title);
+
+		if (current.stats.max_players > 1)
+			Steam_SetStatus_Multiplayer (current.stats.players, current.stats.max_players, utf8name);
+		else
+			Steam_SetStatus_SinglePlayer (utf8name);
 	}
 	else
 	{
 		VID_SetWindowTitle (WINDOW_TITLE_STRING);
+		if (cls.state == ca_connected)
+			Steam_ClearStatus ();
+		else
+			Steam_SetStatus_Menu ();
 	}
 }
 
@@ -1443,6 +1471,8 @@ void Host_Shutdown(void)
 
 // keep Con_Printf from trying to update the screen
 	scr_disabled_for_loading = true;
+
+	Steam_Shutdown ();
 
 	AsyncQueue_Destroy (&async_queue);
 

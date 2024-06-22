@@ -24,6 +24,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 // sys.h -- non-portable functions
 
+typedef struct steamgame_s steamgame_t;
+
 void Sys_Init (void);
 
 // retrieves the directory where *Steam* is installed (not Steam Quake!)
@@ -33,6 +35,8 @@ qboolean Sys_GetSteamDir (char *path, size_t pathsize);
 // (%userprofile%\Saved Games\Nightdive Studios\Quake)
 // Note: library path is needed for Proton
 qboolean Sys_GetSteamQuakeUserDir (char *path, size_t pathsize, const char *library);
+
+qboolean Sys_GetSteamAPILibraryPath (char *path, size_t pathsize, const steamgame_t *game);
 
 // retrieves GOG Quake directory
 qboolean Sys_GetGOGQuakeDir (char *path, size_t pathsize);
@@ -107,6 +111,10 @@ int Sys_FileType (const char *path);
  * returns FS_ENT_NONE (0) if no such file or directory is present. */
 
 qboolean Sys_IsDebuggerPresent (void);
+
+void *Sys_LoadLibrary (const char *path);
+void *Sys_GetLibraryFunction (void *lib, const char *func);
+void Sys_CloseLibrary (void *lib);
 
 //
 // system IO
