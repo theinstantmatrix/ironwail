@@ -2470,6 +2470,48 @@ visdone:
 
 /*
 =================
+Mod_SanitizeMapDescription
+
+Cleans up map descriptions:
+- removes colors
+- replaces newlines with spaces
+- replaces consecutive spaces with single one
+- removes leading/trailing spaces
+
+Returns dst string length (excluding NUL terminator)
+=================
+*/
+size_t Mod_SanitizeMapDescription (char *dst, size_t dstsize, const char *src)
+{
+	int srcpos, dstpos;
+
+	if (!dstsize)
+		return 0;
+
+	for (srcpos = dstpos = 0; src[srcpos] && (size_t)dstpos + 1 < dstsize; srcpos++)
+	{
+		char c = src[srcpos] & 0x7f; // remove color
+		if (c == '\n' || c == '\r') // replace newlines with spaces
+			c = ' ';
+		else if (c == '\\' && src[srcpos + 1] == 'n') // replace '\\' followed by 'n' with space
+		{
+			c = ' ';
+			srcpos++;
+		}
+		// remove leading spaces, replace consecutive spaces with single one
+		if (c != ' ' || (dstpos > 0 && dst[dstpos - 1] != c))
+			dst[dstpos++] = c;
+	}
+	// remove trailing space, if any
+	if (dstpos > 0 && dst[dstpos - 1] == ' ')
+		--dstpos;
+
+	dst[dstpos] = '\0';
+	return dstpos;
+}
+
+/*
+=================
 Mod_LoadMapDescription
 
 Parses the entity lump in the given map to find its worldspawn message
@@ -2485,7 +2527,7 @@ qboolean Mod_LoadMapDescription (char *desc, size_t maxchars, const char *map)
 	FILE		*f;
 	lump_t		*entlump;
 	dheader_t	header;
-	int			i, j, k, filesize;
+	int			i, filesize;
 	qboolean	ret = false;
 
 	if (!maxchars)
@@ -2578,25 +2620,7 @@ qboolean Mod_LoadMapDescription (char *desc, size_t maxchars, const char *map)
 
 			if (is_message)
 			{
-				// copy map title and clean it up a bit
-				for (j = k = 0; com_token[j] && (size_t)k + 1 < maxchars; j++)
-				{
-					char c = com_token[j] & 0x7f;
-					if (c == '\n' || c == '\r') // replace newlines with spaces
-						c = ' ';
-					else if (c == '\\' && com_token[j + 1] == 'n') // replace '\\' followed by 'n' with space
-					{
-						c = ' ';
-						j++;
-					}
-					// remove leading spaces, replace consecutive spaces with single one
-					if (c != ' ' || (k > 0 && desc[k - 1] != c))
-						desc[k++] = c;
-				}
-				// remove trailing space, if any
-				if (k > 0 && desc[k - 1] == ' ')
-					--k;
-				desc[k++] = '\0';
+				Mod_SanitizeMapDescription (desc, maxchars, com_token);
 				if (ret)
 					return true;
 			}
