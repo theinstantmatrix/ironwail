@@ -3738,6 +3738,8 @@ static void MD5_ComputeNormals(iqmvert_t *vert, size_t numverts, unsigned short 
 	hashmap = (int *) calloc (hashsize, sizeof (*hashmap));
 	weld = (unsigned short *) malloc (numverts * sizeof (*weld));
 	normals = (vec3_t *) calloc (numverts, sizeof (vec3_t));
+	if (!hashmap || !weld || !normals)
+		Sys_Error ("MD5_ComputeNormals: out of memory (%u verts/%u tris)", (unsigned int)numverts, (unsigned int)(numindexes/3));
 
 	for (v = 0; v < numverts; v++)
 	{
@@ -3890,6 +3892,8 @@ static void MD5Anim_Load(md5animctx_t *ctx, boneinfo_t *bones, size_t numbones)
 
 	ctx->posedata = outposes = (bonepose_t *) Hunk_Alloc(sizeof(*outposes)*ctx->numjoints*ctx->numposes);
 	frameposes = (bonepose_t *) malloc (sizeof (*frameposes) * ctx->numjoints);
+	if (!frameposes)
+		Sys_Error ("MD5Anim_Load: out of memory (%u joints)", (unsigned int)ctx->numjoints);
 
 
 	MD5EXPECT("hierarchy");
