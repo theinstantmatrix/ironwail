@@ -1992,9 +1992,8 @@ Filename are reletive to the quake directory.
 Allways appends a 0 byte.
 ============
 */
-#define	LOADFILE_ZONE		0
-#define	LOADFILE_HUNK		1
-#define	LOADFILE_MALLOC		2
+#define	LOADFILE_HUNK		0
+#define	LOADFILE_MALLOC		1
 
 byte *COM_LoadFile (const char *path, int usehunk, unsigned int *path_id)
 {
@@ -2017,9 +2016,6 @@ byte *COM_LoadFile (const char *path, int usehunk, unsigned int *path_id)
 	{
 	case LOADFILE_HUNK:
 		buf = (byte *) Hunk_AllocName (len+1, base);
-		break;
-	case LOADFILE_ZONE:
-		buf = (byte *) Z_Malloc (len+1);
 		break;
 	case LOADFILE_MALLOC:
 		buf = (byte *) malloc (len+1);
@@ -2044,11 +2040,6 @@ byte *COM_LoadFile (const char *path, int usehunk, unsigned int *path_id)
 byte *COM_LoadHunkFile (const char *path, unsigned int *path_id)
 {
 	return COM_LoadFile (path, LOADFILE_HUNK, path_id);
-}
-
-byte *COM_LoadZoneFile (const char *path, unsigned int *path_id)
-{
-	return COM_LoadFile (path, LOADFILE_ZONE, path_id);
 }
 
 // returns malloc'd memory

@@ -407,8 +407,6 @@ void COM_CloseFile (int h);
 // procedures differ by their buffer allocation method.
 byte *COM_LoadHunkFile (const char *path, unsigned int *path_id);
 	// allocates the buffer on the hunk.
-byte *COM_LoadZoneFile (const char *path, unsigned int *path_id);
-	// allocates the buffer on the zone.
 byte *COM_LoadMallocFile (const char *path, unsigned int *path_id);
 	// allocates the buffer on the system mem (malloc).
 
