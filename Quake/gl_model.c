@@ -1784,22 +1784,18 @@ Mod_FindUsedTextures
 static void Mod_FindUsedTextures (qmodel_t *mod)
 {
 	msurface_t *s;
-	int i, count, bit;
+	int i, count;
 	int ofs[TEXTYPE_COUNT];
-	int mark = Hunk_HighMark ();
-	byte *inuse = (byte *) Hunk_HighAllocName ((mod->numtextures + 7) >> 3, "used textures");
-
+	uint32_t *inuse = (uint32_t *) calloc (BITARRAY_DWORDS (mod->numtextures), sizeof (uint32_t));
 	memset (ofs, 0, sizeof(ofs));
 	for (i = 0, s = mod->surfaces + mod->firstmodelsurface; i < mod->nummodelsurfaces; i++, s++)
 	{
 		texture_t *t = mod->textures[s->texinfo->texnum];
-		byte *val = &inuse[s->texinfo->texnum >> 3];
 		if (!t)
 			continue;
-		bit = 1 << (s->texinfo->texnum & 7);
-		if (!(*val & bit))
+		if (!GetBit (inuse, s->texinfo->texnum))
 		{
-			*val |= bit;
+			SetBit (inuse, s->texinfo->texnum);
 			ofs[t->type]++;
 		}
 	}
@@ -1817,11 +1813,11 @@ static void Mod_FindUsedTextures (qmodel_t *mod)
 	for (i = 0; i < mod->numtextures; i++)
 	{
 		texture_t *t = mod->textures[i];
-		if (inuse[i >> 3] & (1 << (i & 7)))
+		if (GetBit (inuse, i))
 			mod->usedtextures[ofs[t->type]++] = i;
 	}
 
-	Hunk_FreeToHighMark (mark);
+	free (inuse);
 
 	//Con_Printf("%s: %d/%d textures\n", mod->name, count, mod->numtextures);
 }
