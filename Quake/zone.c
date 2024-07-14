@@ -371,10 +371,10 @@ void Hunk_Print (qboolean all)
 	{
 		Con_SafePrintf ("             Segments\n");
 		Con_SafePrintf ("---------------------------------\n");
-		Con_SafePrintf ("    offset :       size : name\n");
+		Con_SafePrintf ("id :     offset :       size\n");
 		Con_SafePrintf ("---------------------------------\n");
 		for (numseg = 0, seg = hunk_firstseg; seg; seg = seg->next, numseg++)
-			Con_SafePrintf ("%10i : %10i : segment %i\n", seg->base, seg->size, numseg);
+			Con_SafePrintf ("%2i : %10i : %10i\n", numseg, seg->base, seg->size);
 		Con_SafePrintf ("---------------------------------\n");
 		Con_SafePrintf ("\n");
 		Con_SafePrintf ("           Allocations\n");
@@ -384,7 +384,7 @@ void Hunk_Print (qboolean all)
 	if (all)
 		Con_SafePrintf ("    offset :       size : name\n");
 	else
-		Con_SafePrintf ("      size : allocs : name\n");
+		Con_SafePrintf ("allocs :       size : name\n");
 	Con_SafePrintf ("---------------------------------\n");
 
 	for (numseg = 0, seg = hunk_firstseg; seg; seg = seg->next, numseg++)
@@ -428,7 +428,7 @@ void Hunk_Print (qboolean all)
 				if (!next || strncmp (h->name, next->name, HUNKNAME_LEN - 1) != 0)
 				{
 					if (!all)
-						Con_SafePrintf ("%10i : %6i : %s\n", sum, count, h->name);
+						Con_SafePrintf ("%6i : %10i : %s\n", count, sum, h->name);
 					count = 0;
 					sum = 0;
 				}
@@ -448,9 +448,9 @@ void Hunk_Print (qboolean all)
 	}
 	else
 	{
-		Con_SafePrintf ("%10i : %6i : USED\n", hunk_low_used, totalblocks);
-		Con_SafePrintf ("%10i : %6s : REMAINING\n", Hunk_Size () - hunk_low_used, "");
-		Con_SafePrintf ("%10i : %6s : TOTAL\n", Hunk_Size (), "");
+		Con_SafePrintf ("%6i : %10i : USED\n", totalblocks, hunk_low_used);
+		Con_SafePrintf ("%6s : %10i : REMAINING\n", "", Hunk_Size () - hunk_low_used);
+		Con_SafePrintf ("%6s : %10i : TOTAL\n", "", Hunk_Size ());
 	}
 }
 
