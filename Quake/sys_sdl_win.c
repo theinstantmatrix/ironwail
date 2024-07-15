@@ -656,6 +656,8 @@ findfile_t *Sys_FindFirst (const char *dir, const char *ext)
 		return NULL;
 
 	ret = (winfindfile_t *) calloc (1, sizeof (winfindfile_t));
+	if (!ret)
+		Sys_Error ("Sys_FindFirst: out of memory");
 	ret->handle = handle;
 	ret->data = data;
 	Sys_FillFindData (ret);

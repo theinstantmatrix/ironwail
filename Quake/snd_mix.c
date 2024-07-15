@@ -218,7 +218,10 @@ static void S_UpdateFilter(filter_t *filter, int M, float f_c)
 		filter->kernelsize = (M + 1) + 16 - ((M + 1) % 16);
 		filter->memory = (float *) calloc(filter->kernelsize, sizeof(float));
 		filter->kernel = (float *) calloc(filter->kernelsize, sizeof(float));
-		
+
+		if (!filter->memory || !filter->kernel)
+			Sys_Error ("S_UpdateFilter: out of memory (%d bytes)", filter->kernelsize * sizeof (float));
+
 		S_MakeBlackmanWindowKernel(filter->kernel, M, f_c);
 	}
 }

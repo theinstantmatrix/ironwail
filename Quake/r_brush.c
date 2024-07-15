@@ -488,6 +488,8 @@ void GL_BuildLightmaps (void)
 	);
 
 	lightmap_data = (unsigned *) calloc (lmsize, sizeof (*lightmap_data));
+	if (!lightmap_data)
+		Sys_Error ("GL_BuildLightmaps: out of memory on %" SDL_PRIu64 " bytes", (uint64_t)(lmsize * sizeof (*lightmap_data)));
 
 	// compute offsets for each lightmap block
 	for (i=0; i<lightmap_count; i++)

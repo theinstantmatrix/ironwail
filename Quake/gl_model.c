@@ -1783,10 +1783,15 @@ Mod_FindUsedTextures
 */
 static void Mod_FindUsedTextures (qmodel_t *mod)
 {
-	msurface_t *s;
-	int i, count;
-	int ofs[TEXTYPE_COUNT];
-	uint32_t *inuse = (uint32_t *) calloc (BITARRAY_DWORDS (mod->numtextures), sizeof (uint32_t));
+	msurface_t	*s;
+	int			i, count;
+	int			ofs[TEXTYPE_COUNT];
+	uint32_t	*inuse;
+
+	inuse = (uint32_t *) calloc (BITARRAY_DWORDS (mod->numtextures), sizeof (uint32_t));
+	if (!inuse)
+		Sys_Error ("Mod_FindUsedTextures: out of memory (%d bits)", mod->numtextures);
+
 	memset (ofs, 0, sizeof(ofs));
 	for (i = 0, s = mod->surfaces + mod->firstmodelsurface; i < mod->nummodelsurfaces; i++, s++)
 	{
