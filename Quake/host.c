@@ -165,12 +165,12 @@ void Host_EndGame (const char *message, ...)
 
 /*
 ================
-Host_Error
+Host_ReportError
 
 This shuts down both the client and server
 ================
 */
-void Host_Error (const char *error, ...)
+void Host_ReportError (const char *error, ...)
 {
 	va_list		argptr;
 	char		string[1024];

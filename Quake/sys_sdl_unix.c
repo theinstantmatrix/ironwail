@@ -734,10 +734,15 @@ void Sys_mkdir (const char *path)
 	}
 }
 
+qboolean Sys_IsDebuggerPresent (void)
+{
+	return false;
+}
+
 static const char errortxt1[] = "\nERROR-OUT BEGIN\n\n";
 static const char errortxt2[] = "\nQUAKE ERROR: ";
 
-void Sys_Error (const char *error, ...)
+void Sys_ReportError (const char *error, ...)
 {
 	va_list		argptr;
 	char		text[1024];

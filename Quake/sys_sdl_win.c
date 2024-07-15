@@ -870,7 +870,12 @@ void Sys_mkdir (const char *path)
 static const wchar_t errortxt1[] = L"\nERROR-OUT BEGIN\n\n";
 static const wchar_t errortxt2[] = L"\nQUAKE ERROR: ";
 
-void Sys_Error (const char *error, ...)
+qboolean Sys_IsDebuggerPresent (void)
+{
+	return IsDebuggerPresent ();
+}
+
+void Sys_ReportError (const char *error, ...)
 {
 	va_list		argptr;
 	char		text[1024];
@@ -905,9 +910,6 @@ void Sys_Error (const char *error, ...)
 		WriteConsoleW (houtput, L"\r\n",   2,		          NULL, NULL);
 		SDL_Delay (3000);	/* show the console 3 more seconds */
 	}
-
-	if (IsDebuggerPresent ())
-		DebugBreak ();
 
 	exit (1);
 }
