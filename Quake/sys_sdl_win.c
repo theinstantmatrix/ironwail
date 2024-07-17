@@ -29,6 +29,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
+#ifdef _WIN32_WINNT
+#undef _WIN32_WINNT
+#endif
+#define _WIN32_WINNT 0x0600
 #include <windows.h>
 #include <mmsystem.h>
 #include <winreg.h>
@@ -557,7 +561,7 @@ qboolean Sys_Explore (const char *path)
 	if (FAILED (hr))
 		goto cleanup_folder;
 
-	hr = SHOpenFolderAndSelectItems (folder, 1, &file, 0);
+	hr = SHOpenFolderAndSelectItems (folder, 1, (LPCITEMIDLIST *) &file, 0);
 	if (SUCCEEDED (hr))
 		result = true;
 
