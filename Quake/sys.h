@@ -64,7 +64,7 @@ qboolean Sys_Explore (const char *path);
 // file IO
 //
 
-typedef long long qfileofs_t;
+typedef int64_t qfileofs_t;
 
 // returns the file size or -1 if file is not present.
 // the file should be in BINARY mode for stupid OSs that care
