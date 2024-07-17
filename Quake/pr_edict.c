@@ -1966,7 +1966,7 @@ qboolean PR_LoadProgs (const char *filename, qboolean fatal)
 	qcvm->progs = (dprograms_t *)COM_LoadHunkFile (filename, NULL);
 	if (!qcvm->progs)
 		return false;
-	Con_DPrintf ("Programs occupy %lliK.\n", com_filesize/1024);
+	Con_DPrintf ("Programs occupy %" SDL_PRIs64 "K.\n", com_filesize/1024);
 
 	qcvm->crc = CRC_Block (qcvm->progs, com_filesize);
 
