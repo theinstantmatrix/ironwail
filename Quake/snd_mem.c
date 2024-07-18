@@ -65,12 +65,10 @@ static void ResampleSfx (sfx_t *sfx, int inrate, int inwidth, byte *data)
 	else
 	{
 // general case
-		samplefrac = 0;
+		srcsample = samplefrac = 0;
 		fracstep = stepscale*256;
 		for (i = 0; i < outcount; i++)
 		{
-			srcsample = samplefrac >> 8;
-			samplefrac += fracstep;
 			if (inwidth == 2)
 				sample = LittleShort ( ((short *)data)[srcsample] );
 			else
@@ -79,6 +77,9 @@ static void ResampleSfx (sfx_t *sfx, int inrate, int inwidth, byte *data)
 				((short *)sc->data)[i] = sample;
 			else
 				((signed char *)sc->data)[i] = sample >> 8;
+			samplefrac += fracstep;
+			srcsample += samplefrac >> 8;
+			samplefrac &= 255;
 		}
 	}
 }
