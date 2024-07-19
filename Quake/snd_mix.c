@@ -245,12 +245,12 @@ static void S_ApplyFilter(filter_t *filter, int *data, int stride, int count)
 	float *input;
 	const int kernelsize = filter->kernelsize;
 	const float *kernel = filter->kernel;
+	int mark;
 	int parity;
 
+	mark = Hunk_LowMark ();
 	inputsize = sizeof(float) * (filter->kernelsize + count);
-	input = (float *) malloc(inputsize);
-	if (!input)
-		Sys_Error ("S_ApplyFilter: out of memory on %" SDL_PRIu64 " bytes", (uint64_t)inputsize);
+	input = (float *) Hunk_AllocNoFill (inputsize);
 
 // set up the input buffer
 // memory holds the previous filter->kernelsize samples of input.
@@ -290,7 +290,7 @@ static void S_ApplyFilter(filter_t *filter, int *data, int stride, int count)
 
 	filter->parity = parity;
 
-	free(input);
+	Hunk_FreeToLowMark (mark);
 }
 
 /*

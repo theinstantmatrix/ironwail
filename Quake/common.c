@@ -2015,7 +2015,7 @@ byte *COM_LoadFile (const char *path, int usehunk, unsigned int *path_id)
 	switch (usehunk)
 	{
 	case LOADFILE_HUNK:
-		buf = (byte *) Hunk_AllocName (len+1, base);
+		buf = (byte *) Hunk_AllocNameNoFill (len+1, base);
 		break;
 	case LOADFILE_MALLOC:
 		buf = (byte *) malloc (len+1);

@@ -308,6 +308,12 @@ static hunkseg_t		*hunk_lastseg;
 
 static int				hunk_low_used;
 
+typedef enum
+{
+	HF_UNINIT			= 0,
+	HF_CLEAR			= 1 << 0,
+} hunkflags_t;
+
 
 /*
 ===================
@@ -317,6 +323,17 @@ Hunk_Size
 static int Hunk_Size (void)
 {
 	return hunk_lastseg->base + hunk_lastseg->size;
+}
+
+
+/*
+===================
+Hunk_GetName
+===================
+*/
+static const char *Hunk_GetName (const hunk_t *hunk)
+{
+	return hunk->name[0] ? hunk->name : "unknown";
 }
 
 /*
@@ -420,15 +437,15 @@ void Hunk_Print (qboolean all)
 				// print the single block
 				//
 				if (all)
-					Con_SafePrintf ("%10i : %10i : %s\n", seg->base + ofs, h->size, h->name);
+					Con_SafePrintf ("%10i : %10i : %s\n", seg->base + ofs, h->size, Hunk_GetName (h));
 
 				//
 				// print the total
 				//
-				if (!next || strncmp (h->name, next->name, HUNKNAME_LEN - 1) != 0)
+				if (!next || strncmp (Hunk_GetName (h), Hunk_GetName (next), HUNKNAME_LEN - 1) != 0)
 				{
 					if (!all)
-						Con_SafePrintf ("%6i : %10i : %s\n", count, sum, h->name);
+						Con_SafePrintf ("%6i : %10i : %s\n", count, sum, Hunk_GetName (h));
 					count = 0;
 					sum = 0;
 				}
@@ -507,10 +524,10 @@ static hunkseg_t *Hunk_SegForPtr (const void *ptr)
 
 /*
 ===================
-Hunk_AllocName
+Hunk_AllocInternal
 ===================
 */
-void *Hunk_AllocName (int size, const char *name)
+static void *Hunk_AllocInternal (int size, const char *name, hunkflags_t flags)
 {
 	hunkseg_t	*seg;
 	hunk_t		*h;
@@ -574,13 +591,37 @@ void *Hunk_AllocName (int size, const char *name)
 
 	Cache_FreeLow (hunk_low_used);
 
-	memset (h, 0, size);
+	if (flags & HF_CLEAR)
+		memset (h, 0, size);
 
 	h->size = size;
 	h->sentinel = HUNK_SENTINEL;
-	q_strlcpy (h->name, name, HUNKNAME_LEN);
+	if (name)
+		q_strlcpy (h->name, name, HUNKNAME_LEN);
+	else
+		h->name[0] = '\0';
 
 	return (void *)(h+1);
+}
+
+/*
+===================
+Hunk_AllocName
+===================
+*/
+void *Hunk_AllocName (int size, const char *name)
+{
+	return Hunk_AllocInternal (size, name, HF_CLEAR);
+}
+
+/*
+===================
+Hunk_AllocNameNoFill
+===================
+*/
+void *Hunk_AllocNameNoFill (int size, const char *name)
+{
+	return Hunk_AllocInternal (size, name, HF_UNINIT);
 }
 
 /*
@@ -590,7 +631,17 @@ Hunk_Alloc
 */
 void *Hunk_Alloc (int size)
 {
-	return Hunk_AllocName (size, "unknown");
+	return Hunk_AllocName (size, NULL);
+}
+
+/*
+===================
+Hunk_AllocNoFill
+===================
+*/
+void *Hunk_AllocNoFill (int size)
+{
+	return Hunk_AllocNameNoFill (size, NULL);
 }
 
 int	Hunk_LowMark (void)

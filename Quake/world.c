@@ -339,8 +339,10 @@ void SV_TouchLinks (edict_t *ent)
 	edict_t		*touch;
 	int		old_self, old_other;
 	int		i, listcount;
+	int		mark;
 
-	list = alloca (qcvm->num_edicts*sizeof(edict_t *));
+	mark = Hunk_LowMark ();
+	list = (edict_t **) Hunk_AllocNoFill (qcvm->num_edicts*sizeof(edict_t *));
 
 	listcount = 0;
 	SV_AreaTriggerEdicts (ent, sv_areanodes, list, &listcount, qcvm->num_edicts);
@@ -372,6 +374,9 @@ void SV_TouchLinks (edict_t *ent)
 		pr_global_struct->self = old_self;
 		pr_global_struct->other = old_other;
 	}
+
+// free hunk-allocated edicts array
+	Hunk_FreeToLowMark (mark);
 }
 
 
