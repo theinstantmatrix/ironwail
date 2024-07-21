@@ -2656,8 +2656,10 @@ static void Host_Loadgame_f (void)
 	}
 
 	// Free edicts allocated during map loading but no longer used after restoring saved game state
+	// Note: we use ED_ClearEdict instead of ED_Free to avoid placing entities >= num_edicts in the free list
+	// This is different from QuakeSpasm, which doesn't use a free list
 	for (i = entnum; i < qcvm->num_edicts; i++)
-		ED_Free (EDICT_NUM (i));
+		ED_ClearEdict (EDICT_NUM (i));
 
 	qcvm->num_edicts = entnum;
 	qcvm->time = time;

@@ -181,8 +181,11 @@ Sets everything to NULL
 */
 void ED_ClearEdict (edict_t *e)
 {
+	if (!e->free)
+		SV_UnlinkEdict (e);
+	else
+		ED_RemoveFromFreeList (e);
 	memset (&e->v, 0, qcvm->progs->entityfields * 4);
-	ED_RemoveFromFreeList (e);
 }
 
 /*
