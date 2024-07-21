@@ -1143,20 +1143,43 @@ static void CalcSurfaceExtents (msurface_t *s)
 	int		i,j, e;
 	mvertex_t	*v;
 	mtexinfo_t	*tex;
-	int		bmins[2], bmaxs[2];
+	double	texvecs[2][4];
 
 	mins[0] = mins[1] = FLT_MAX;
 	maxs[0] = maxs[1] = -FLT_MAX;
 
 	tex = s->texinfo;
 
+#ifdef USE_SSE2
+	{
+		__m128 tv0 = _mm_loadu_ps (tex->vecs[0]);
+		__m128 tv1 = _mm_loadu_ps (tex->vecs[1]);
+		_mm_storeu_pd (&texvecs[0][0], _mm_cvtps_pd (tv0));
+		_mm_storeu_pd (&texvecs[0][2], _mm_cvtps_pd (_mm_shuffle_ps (tv0, tv0, _MM_SHUFFLE (1, 0, 3, 2))));
+		_mm_storeu_pd (&texvecs[1][0], _mm_cvtps_pd (tv1));
+		_mm_storeu_pd (&texvecs[1][2], _mm_cvtps_pd (_mm_shuffle_ps (tv1, tv1, _MM_SHUFFLE (1, 0, 3, 2))));
+	}
+#else
+	for (i=0 ; i<4 ; i++)
+	{
+		texvecs[0][i] = (double) tex->vecs[0][i];
+		texvecs[1][i] = (double) tex->vecs[1][i];
+	}
+#endif
+
 	for (i=0 ; i<s->numedges ; i++)
 	{
+		double vposition[3];
+
 		e = loadmodel->surfedges[s->firstedge+i];
 		if (e >= 0)
 			v = &loadmodel->vertexes[loadmodel->edges[e].v[0]];
 		else
 			v = &loadmodel->vertexes[loadmodel->edges[-e].v[1]];
+
+		vposition[0] = (double) v->position[0];
+		vposition[1] = (double) v->position[1];
+		vposition[2] = (double) v->position[2];
 
 		for (j=0 ; j<2 ; j++)
 		{
@@ -1175,25 +1198,24 @@ static void CalcSurfaceExtents (msurface_t *s)
 			 * and using SSE2 floating-point.  A potential trouble spot
 			 * is the hallway at the beginning of mfxsp17.  -- ericw
 			 */
-			val =	((double)v->position[0] * (double)tex->vecs[j][0]) +
-				((double)v->position[1] * (double)tex->vecs[j][1]) +
-				((double)v->position[2] * (double)tex->vecs[j][2]) +
-				(double)tex->vecs[j][3];
+			val =
+				(vposition[0] * texvecs[j][0]) +
+				(vposition[1] * texvecs[j][1]) +
+				(vposition[2] * texvecs[j][2]) +
+				texvecs[j][3];
 
-			if (val < mins[j])
-				mins[j] = val;
-			if (val > maxs[j])
-				maxs[j] = val;
+			mins[j] = q_min (mins[j], val);
+			maxs[j] = q_max (maxs[j], val);
 		}
 	}
 
 	for (i=0 ; i<2 ; i++)
 	{
-		bmins[i] = floor(mins[i]/16);
-		bmaxs[i] = ceil(maxs[i]/16);
+		int bmin = 16 * (int) floor (mins[i]/16);
+		int bmax = 16 * (int) ceil (maxs[i]/16);
 
-		s->texturemins[i] = bmins[i] * 16;
-		s->extents[i] = (bmaxs[i] - bmins[i]) * 16;
+		s->texturemins[i] = bmin;
+		s->extents[i] = bmax - bmin;
 
 		if ( !(tex->flags & TEX_SPECIAL) && s->extents[i] > 2000) //johnfitz -- was 512 in glquake, 256 in winquake
 			Sys_Error ("Bad surface extents");
