@@ -272,6 +272,7 @@ typedef struct qcvm_s
 	int			numentityfields;
 	int			*entityfieldofs;
 	ddef_t		**entityfields;
+	int			*functionsizes;		// number of statements in each function
 } qcvm_t;
 
 typedef struct savedata_s

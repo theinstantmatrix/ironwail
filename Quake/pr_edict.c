@@ -1957,6 +1957,50 @@ static void PR_FindEntityFields (void)
 
 /*
 ===============
+PR_CompareFunction
+===============
+*/
+static int PR_CompareFunction (const void *pa, const void *pb)
+{
+	const dfunction_t *fa = &qcvm->functions[*(const int *)pa];
+	const dfunction_t *fb = &qcvm->functions[*(const int *)pb];
+	return fa->first_statement - fb->first_statement;
+}
+
+/*
+===============
+PR_FindFunctionRanges
+===============
+*/
+static void PR_FindFunctionRanges (void)
+{
+	int		i, mark;
+	int		*order;
+
+	qcvm->functionsizes = (int *) Hunk_AllocName (qcvm->progs->numfunctions * sizeof (*order), "func_sizes");
+	mark = Hunk_LowMark ();
+
+	order = (int *) Hunk_AllocNoFill (qcvm->progs->numfunctions * sizeof (*order));
+	for (i = 0; i < qcvm->progs->numfunctions; i++)
+		order[i] = i;
+	qsort (order, qcvm->progs->numfunctions, sizeof (*order), &PR_CompareFunction);
+
+	for (i = 0; i < qcvm->progs->numfunctions; i++)
+	{
+		dfunction_t *f = &qcvm->functions[order[i]];
+		if (f->first_statement <= 0)
+			continue;
+		if (i == qcvm->progs->numfunctions - 1)
+			qcvm->functionsizes[order[i]] = qcvm->progs->numstatements - f->first_statement;
+		else
+			qcvm->functionsizes[order[i]] = qcvm->functions[order[i + 1]].first_statement - f->first_statement;
+	}
+
+	Hunk_FreeToLowMark (mark);
+}
+
+/*
+===============
 PR_LoadProgs
 ===============
 */
@@ -2108,6 +2152,7 @@ qboolean PR_LoadProgs (const char *filename, qboolean fatal)
 	PR_EnableExtensions ();
 	PR_FindSavegameFields ();
 	PR_FindEntityFields ();
+	PR_FindFunctionRanges ();
 
 	qcvm->effects_mask = PR_FindSupportedEffects ();
 
