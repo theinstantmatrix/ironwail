@@ -273,6 +273,12 @@ typedef struct qcvm_s
 	int			*entityfieldofs;
 	ddef_t		**entityfields;
 	int			*functionsizes;		// number of statements in each function
+
+	int			maxfieldofs;
+	int			*ofstofield;		// index of field at offset, or -1
+
+	int			maxglobalofs;
+	int			*ofstoglobal;		// index of global at offset, or -1
 } qcvm_t;
 
 typedef struct savedata_s

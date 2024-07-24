@@ -265,16 +265,14 @@ ED_GlobalAtOfs
 */
 static ddef_t *ED_GlobalAtOfs (int ofs)
 {
-	ddef_t		*def;
-	int			i;
+	if (ofs < 0 || ofs > qcvm->maxglobalofs)
+		return NULL;
 
-	for (i = 0; i < qcvm->progs->numglobaldefs; i++)
-	{
-		def = &qcvm->globaldefs[i];
-		if (def->ofs == ofs)
-			return def;
-	}
-	return NULL;
+	ofs = qcvm->ofstoglobal[ofs];
+	if (ofs < 0)
+		return NULL;
+
+	return &qcvm->globaldefs[ofs];
 }
 
 /*
@@ -284,16 +282,14 @@ ED_FieldAtOfs
 */
 static ddef_t *ED_FieldAtOfs (int ofs)
 {
-	ddef_t		*def;
-	int			i;
+	if (ofs < 0 || ofs > qcvm->maxfieldofs)
+		return NULL;
 
-	for (i = 0; i < qcvm->progs->numfielddefs; i++)
-	{
-		def = &qcvm->fielddefs[i];
-		if (def->ofs == ofs)
-			return def;
-	}
-	return NULL;
+	ofs = qcvm->ofstofield[ofs];
+	if (ofs < 0)
+		return NULL;
+
+	return &qcvm->fielddefs[ofs];
 }
 
 /*
@@ -2001,6 +1997,47 @@ static void PR_FindFunctionRanges (void)
 
 /*
 ===============
+PR_FillOffsetTables
+===============
+*/
+static void PR_FillOffsetTables (void)
+{
+	int		pass, i, maxofs, *data;
+	struct
+	{
+		int			**offsets;
+		int			*maxofs;
+		int			numdefs;
+		ddef_t		*defs;
+		const char	*allocname;
+	}
+	passes[] =
+	{
+		{ &qcvm->ofstofield,	&qcvm->maxfieldofs,		qcvm->progs->numfielddefs,	qcvm->fielddefs,	"ofstofield"	},
+		{ &qcvm->ofstoglobal,	&qcvm->maxglobalofs,	qcvm->progs->numglobaldefs,	qcvm->globaldefs,	"ofstoglobal"	},
+	};
+
+	for (pass = 0; pass < (int) Q_COUNTOF (passes); pass++)
+	{
+		// find maximum offset
+		for (i = 1, maxofs = 0; i < passes[pass].numdefs; i++)
+			maxofs = q_max (maxofs, passes[pass].defs[i].ofs);
+		*passes[pass].maxofs = maxofs;
+
+		// alloc table and fill it with -1
+		data = *passes[pass].offsets = (int *) Hunk_AllocNameNoFill ((maxofs + 1) * sizeof (int), passes[pass].allocname);
+		for (i = 0; i <= maxofs; i++)
+			data[i] = -1;
+
+		// fill actual offsets in descending order so that earlier defs are written last
+		// this preserves the behavior of ED_FieldAtOfs/ED_GlobalAtOfs, which stopped at the first match
+		for (i = passes[pass].numdefs - 1; i > 0; i--)
+			data[passes[pass].defs[i].ofs] = i;
+	}
+}
+
+/*
+===============
 PR_LoadProgs
 ===============
 */
@@ -2153,6 +2190,7 @@ qboolean PR_LoadProgs (const char *filename, qboolean fatal)
 	PR_FindSavegameFields ();
 	PR_FindEntityFields ();
 	PR_FindFunctionRanges ();
+	PR_FillOffsetTables ();
 
 	qcvm->effects_mask = PR_FindSupportedEffects ();
 
