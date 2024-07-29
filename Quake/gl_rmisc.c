@@ -496,10 +496,6 @@ void R_TimeRefresh_f (void)
 	Con_Printf ("%lf seconds (%.1lf fps)\n", time, 128/time);
 }
 
-void D_FlushCaches (void)
-{
-}
-
 static GLuint current_array_buffer;
 static GLuint current_element_array_buffer;
 static GLuint current_shader_storage_buffer;

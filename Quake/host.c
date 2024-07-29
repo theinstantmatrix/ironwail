@@ -624,7 +624,6 @@ void Host_ClearMemory (void)
 	}
 
 	Con_DPrintf ("Clearing memory\n");
-	D_FlushCaches ();
 	Mod_ClearAll ();
 	Sky_ClearAll();
 	PR_ClearProgs(&sv.qcvm);
