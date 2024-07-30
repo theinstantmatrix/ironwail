@@ -883,10 +883,10 @@ static qboolean GL_FindExtension (const char *name)
 GL_BeginGroup
 =============
 */
-static qboolean gldebug = false;
+static qboolean glmarkers = false;
 void GL_BeginGroup (const char *name)
 {
-	if (gldebug)
+	if (glmarkers)
 		GL_PushDebugGroupFunc (GL_DEBUG_SOURCE_APPLICATION, 0, -1, name);
 }
 
@@ -897,7 +897,7 @@ GL_EndGroup
 */
 void GL_EndGroup (void)
 {
-	if (gldebug)
+	if (glmarkers)
 		GL_PopDebugGroupFunc ();
 }
 
@@ -999,11 +999,14 @@ static void GL_CheckExtensions (void)
 {
 	GL_InitFunctions (gl_core_functions, true);
 
+	if (COM_CheckParm ("-glmarkers"))
+		glmarkers = true;
+
 #ifdef NDEBUG
 	if (COM_CheckParm("-gldebug"))
 #endif
 	{
-		gldebug = true;
+		glmarkers = true;
 		GL_DebugMessageCallbackFunc (&GL_DebugCallback, NULL);
 		glEnable (GL_DEBUG_OUTPUT);
 		glEnable (GL_DEBUG_OUTPUT_SYNCHRONOUS);
