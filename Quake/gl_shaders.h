@@ -1612,6 +1612,8 @@ DRAW_ELEMENTS_INDIRECT_COMMAND
 "		uint numedges = SURF_NUMEDGES(surfbase);\n"
 "		uint firstvert = SURF_FIRSTVERT(surfbase);\n"
 "		uint cmdbase = texnum * uint(SIZEOF_CMD);\n"
+"		// some bsps out there have faces with < 2 edges, which would cause underflow below\n"
+"		numedges = max(numedges, 2u);\n"
 "		uint ofs = CMD_FIRST_INDEX(cmdbase) + atomicAdd(CMD_COUNT(cmdbase), 3u * (numedges - 2u));\n"
 "		for (j = 2u; j < numedges; j++)\n"
 "		{\n"
