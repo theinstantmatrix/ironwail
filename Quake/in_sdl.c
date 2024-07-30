@@ -36,6 +36,7 @@ extern cvar_t language;
 
 static qboolean windowhasfocus = true;	//just in case sdl fails to tell us...
 static textmode_t textmode = TEXTMODE_OFF;
+static keydevice_t lastactivetype = KD_NONE;
 
 static cvar_t in_debugkeys = {"in_debugkeys", "0", CVAR_NONE};
 
@@ -78,10 +79,11 @@ cvar_t gyro_calibration_z = {"gyro_calibration_z", "0", CVAR_ARCHIVE};
 
 cvar_t gyro_noise_thresh = {"gyro_noise_thresh", "1.5", CVAR_ARCHIVE};
 
-static SDL_JoystickID joy_active_instanceid = -1;
-static int joy_active_device = -1;
-static SDL_GameController *joy_active_controller = NULL;
-static char joy_active_name[256];
+static SDL_JoystickID		joy_active_instanceid = -1;
+static int					joy_active_device = -1;
+static SDL_GameController	*joy_active_controller = NULL;
+static gamepadtype_t		joy_active_type = GAMEPAD_NONE;
+static char					joy_active_name[256];
 
 static qboolean	no_mouse = false;
 
@@ -303,6 +305,7 @@ static qboolean IN_UseController (int device_index)
 		joy_active_controller = NULL;
 		joy_active_instanceid = -1;
 		joy_active_device = -1;
+		joy_active_type = GAMEPAD_NONE;
 		Cvar_SetValueQuick (&joy_device, -1);
 		gyro_present = false;
 		gyro_yaw = gyro_pitch = 0.f;
@@ -332,6 +335,33 @@ static qboolean IN_UseController (int device_index)
 	Cvar_SetValueQuick (&joy_device, device_index);
 	// Save controller name so we can print it when unplugged (SDL_GameControllerName would return NULL)
 	q_strlcpy (joy_active_name, controllername, sizeof (joy_active_name));
+
+	// Save controller family so we can show more appropriate button names
+#if SDL_VERSION_ATLEAST(2, 0, 12)
+	switch (SDL_GameControllerGetType (joy_active_controller))
+	{
+	default:
+	case SDL_CONTROLLER_TYPE_XBOX360:
+	case SDL_CONTROLLER_TYPE_XBOXONE:
+		joy_active_type = GAMEPAD_XBOX;
+		break;
+
+	case SDL_CONTROLLER_TYPE_PS3:
+	case SDL_CONTROLLER_TYPE_PS4:
+	case SDL_CONTROLLER_TYPE_PS5:
+		joy_active_type = GAMEPAD_PLAYSTATION;
+		break;
+
+	case SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_PRO:
+#if SDL_VERSION_ATLEAST(2, 24, 0)
+	case SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_LEFT:
+	case SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_RIGHT:
+	case SDL_CONTROLLER_TYPE_NINTENDO_SWITCH_JOYCON_PAIR:
+#endif // SDL_VERSION_ATLEAST(2, 24, 0)
+		joy_active_type = GAMEPAD_NINTENDO;
+		break;
+	}
+#endif // SDL_VERSION_ATLEAST(2, 0, 12)
 
 #if SDL_VERSION_ATLEAST(2, 0, 14)
 	if (SDL_GameControllerHasLED (joy_active_controller))
@@ -425,6 +455,11 @@ qboolean IN_HasGamepad (void)
 const char *IN_GetGamepadName (void)
 {
 	return joy_active_controller ? joy_active_name : NULL;
+}
+
+gamepadtype_t IN_GetGamepadType (void)
+{
+	return joy_active_type;
 }
 
 void IN_UseNextGamepad (int dir, qboolean allow_disable)
@@ -676,6 +711,7 @@ static int IN_KeyForControllerButton(SDL_GameControllerButton button)
 		case SDL_CONTROLLER_BUTTON_B: return K_BBUTTON;
 		case SDL_CONTROLLER_BUTTON_X: return K_XBUTTON;
 		case SDL_CONTROLLER_BUTTON_Y: return K_YBUTTON;
+		// Note: back and start are always mapped to TAB/ESC, the player cannot rebind them
 		case SDL_CONTROLLER_BUTTON_BACK: return K_TAB;
 		case SDL_CONTROLLER_BUTTON_START: return K_ESCAPE;
 		case SDL_CONTROLLER_BUTTON_LEFTSTICK: return K_LTHUMB;
@@ -721,12 +757,14 @@ static void IN_JoyKeyEvent(qboolean wasdown, qboolean isdown, int key, double *t
 			if (currenttime >= *timer)
 			{
 				*timer = currenttime + 1.0 / repeatrate;
+				lastactivetype = KD_GAMEPAD;
 				Key_Event(key, true);
 			}
 		}
 		else
 		{
 			*timer = 0;
+			lastactivetype = KD_GAMEPAD;
 			Key_Event(key, false);
 		}
 	}
@@ -735,6 +773,7 @@ static void IN_JoyKeyEvent(qboolean wasdown, qboolean isdown, int key, double *t
 		if (isdown)
 		{
 			*timer = currenttime + repeatdelay;
+			lastactivetype = KD_GAMEPAD;
 			Key_Event(key, true);
 		}
 	}
@@ -1020,6 +1059,11 @@ textmode_t IN_GetTextMode (void)
 	return textmode;
 }
 
+keydevice_t IN_GetLastActiveDeviceType (void)
+{
+	return lastactivetype;
+}
+
 static inline int IN_SDL2_ScancodeToQuakeKey(SDL_Scancode scancode)
 {
 	switch (scancode)
@@ -1248,6 +1292,8 @@ void IN_SendKeyEvents (void)
 			}
 			break;
 		case SDL_TEXTINPUT:
+			lastactivetype = KD_KEYBOARD;
+
 			if (in_debugkeys.value)
 				IN_DebugTextEvent(&event);
 
@@ -1264,6 +1310,8 @@ void IN_SendKeyEvents (void)
 		case SDL_KEYDOWN:
 		case SDL_KEYUP:
 			down = (event.key.state == SDL_PRESSED);
+
+			lastactivetype = KD_KEYBOARD;
 
 			if (in_debugkeys.value)
 				IN_DebugKeyEvent(&event);
@@ -1285,6 +1333,7 @@ void IN_SendKeyEvents (void)
 							event.button.button);
 				break;
 			}
+			lastactivetype = KD_MOUSE;
 			if (key_dest == key_menu)
 				M_Mousemove (event.button.x, event.button.y);
 			else if (key_dest == key_console)
@@ -1293,6 +1342,7 @@ void IN_SendKeyEvents (void)
 			break;
 
 		case SDL_MOUSEWHEEL:
+			lastactivetype = KD_MOUSE;
 			if (event.wheel.y > 0)
 			{
 				Key_Event(K_MWHEELUP, true);

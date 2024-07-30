@@ -255,16 +255,6 @@ void M_Print (int cx, int cy, const char *str)
 	M_PrintEx (cx, cy, 8, str);
 }
 
-#define ALIGN_LEFT		0
-#define ALIGN_CENTER	1
-#define ALIGN_RIGHT		2
-
-void M_PrintAligned (int cx, int cy, int align, const char *str)
-{
-	cx -= strlen (str) * align / 2 * 8;
-	M_Print (cx, cy, str);
-}
-
 void M_PrintWhiteEx (int cx, int cy, int dim, const char *str)
 {
 	while (*str)
@@ -278,6 +268,24 @@ void M_PrintWhiteEx (int cx, int cy, int dim, const char *str)
 void M_PrintWhite (int cx, int cy, const char *str)
 {
 	M_PrintWhiteEx (cx, cy, 8, str);
+}
+
+#define ALIGN_LEFT		0
+#define ALIGN_CENTER	1
+#define ALIGN_RIGHT		2
+
+void M_PrintAlignedEx (int cx, int cy, int align, int dim, qboolean color, const char *str)
+{
+	cx -= strlen (str) * align / 2 * dim;
+	if (color)
+		M_PrintEx (cx, cy, dim, str);
+	else
+		M_PrintWhiteEx (cx, cy, dim, str);
+}
+
+void M_PrintAligned (int cx, int cy, int align, const char *str)
+{
+	M_PrintAlignedEx (cx, cy, align, 8, true, str);
 }
 
 // TODO: smooth scrolling
@@ -4446,49 +4454,59 @@ void M_Options_Mousemove (int cx, int cy)
 //=============================================================================
 /* KEYS MENU */
 
-static const char* const bindnames[][2] =
+typedef struct
 {
-	{"+forward",		"Move forward"},
-	{"+back",			"Move backward"},
-	{"+moveleft",		"Move left"},
-	{"+moveright",		"Move right"},
-	{"+jump",			"Jump / swim up"},
-	{"+moveup",			"Swim up"},
-	{"+movedown",		"Swim down"},
-	{"+speed",			"Run"},
-	{"+strafe",			"Sidestep"},
-	{"",				""},
-	{"+left",			"Turn left"},
-	{"+right",			"Turn right"},
-	{"+lookup",			"Look up"},
-	{"+lookdown",		"Look down"},
-	{"centerview",		"Center view"},
-	{"zoom_in",			"Toggle zoom"},
-	{"+zoom",			"Quick zoom"},
-	{"+gyroaction",		"Gyro switch"},
-	{"",				""},
-	{"+attack",			"Attack"},
-	{"impulse 10",		"Next weapon"},
-	{"impulse 12",		"Previous weapon"},
-	{"impulse 1",		"Axe"},
-	{"impulse 2",		"Shotgun"},
-	{"impulse 3",		"Super Shotgun"},
-	{"impulse 4",		"Nailgun"},
-	{"impulse 5",		"Super Nailgun"},
-	{"impulse 6",		"Grenade Launcher"},
-	{"impulse 7",		"Rocket Launcher"},
-	{"impulse 8",		"Thunderbolt"},
-	{"impulse 225",		"Laser Cannon"},
-	{"impulse 226",		"Mjolnir"},
+	const char			*command;
+	const char			*description;
+	keydevicemask_t		devicemask;
+} menukeybind_t;
+
+static const menukeybind_t menubinds[] =
+{
+	{"+forward",		"Move forward",			KDM_KEYBOARD_AND_MOUSE},
+	{"+back",			"Move backward",		KDM_KEYBOARD_AND_MOUSE},
+	{"+moveleft",		"Move left",			KDM_KEYBOARD_AND_MOUSE},
+	{"+moveright",		"Move right",			KDM_KEYBOARD_AND_MOUSE},
+	{"+jump",			"Jump / swim up",		KDM_ANY},
+	{"+moveup",			"Swim up",				KDM_ANY},
+	{"+movedown",		"Swim down",			KDM_ANY},
+	{"+speed",			"Run",					KDM_KEYBOARD_AND_MOUSE},
+	{"+strafe",			"Sidestep",				KDM_KEYBOARD_AND_MOUSE},
+	{"",				"",						KDM_ANY},
+	{"+left",			"Turn left",			KDM_KEYBOARD_AND_MOUSE},
+	{"+right",			"Turn right",			KDM_KEYBOARD_AND_MOUSE},
+	{"+lookup",			"Look up",				KDM_KEYBOARD_AND_MOUSE},
+	{"+lookdown",		"Look down",			KDM_KEYBOARD_AND_MOUSE},
+	{"centerview",		"Center view",			KDM_ANY},
+	{"zoom_in",			"Toggle zoom",			KDM_ANY},
+	{"+zoom",			"Quick zoom",			KDM_ANY},
+	{"+gyroaction",		"Gyro switch",			KDM_GAMEPAD},
+	{"",				"",						KDM_ANY},
+	{"+attack",			"Attack",				KDM_ANY},
+	{"impulse 10",		"Next weapon",			KDM_ANY},
+	{"impulse 12",		"Previous weapon",		KDM_ANY},
+	{"impulse 1",		"Axe",					KDM_ANY},
+	{"impulse 2",		"Shotgun",				KDM_ANY},
+	{"impulse 3",		"Super Shotgun",		KDM_ANY},
+	{"impulse 4",		"Nailgun",				KDM_ANY},
+	{"impulse 5",		"Super Nailgun",		KDM_ANY},
+	{"impulse 6",		"Grenade Launcher",		KDM_ANY},
+	{"impulse 7",		"Rocket Launcher",		KDM_ANY},
+	{"impulse 8",		"Thunderbolt",			KDM_ANY},
+	{"impulse 225",		"Laser Cannon",			KDM_ANY},
+	{"impulse 226",		"Mjolnir",				KDM_ANY},
 };
 
-#define	NUMCOMMANDS		Q_COUNTOF(bindnames)
-#define KEYLIST_OFS		48
+#define	NUMCOMMANDS		Q_COUNTOF(menubinds)
+#define KEYLIST_TOP		56						// title plaque, tabs, scroll ellipsis bar
+#define KEYLIST_BOTTOM	24						// scroll ellipsis bar, search box, key hint
 
 static struct
 {
 	menulist_t			list;
+	keydevicemask_t		devicemask;
 	int					y;
+	menukeybind_t		*items;
 } keysmenu;
 
 static qboolean	bind_grab;
@@ -4498,37 +4516,66 @@ static void M_Keys_UpdateLayout (void)
 	int height;
 
 	M_UpdateBounds ();
-	height = keysmenu.list.numitems * 8 + KEYLIST_OFS + 12;
+
+	// Note: we use NUMCOMMANDS instead of keysmenu.list.numitems to have a stable layout
+	// when switching between keyboard+mouse/gamepad tabs (different number of items)
+	height = NUMCOMMANDS * 8 + KEYLIST_TOP + KEYLIST_BOTTOM;
 	height = q_min (height, m_height);
 	keysmenu.y = m_top + (((m_height - height) / 2) & ~7);
-	keysmenu.list.viewsize = (height - KEYLIST_OFS - 12) / 8;
+	keysmenu.list.viewsize = (height - KEYLIST_TOP - KEYLIST_BOTTOM) / 8;
 }
 
 static qboolean M_Keys_IsSelectable (int index)
 {
-	return bindnames[index][0][0] != 0;
+	return keysmenu.items[index].command[0] != '\0';
 }
 
 static qboolean M_Keys_Match (int index)
 {
-	const char *name = bindnames[index][1];
+	const char *name = keysmenu.items[index].description;
 	if (!*name)
 		return false;
 	return q_strcasestr (name, keysmenu.list.search.text) != NULL;
 }
 
+static void M_Keys_Populate (void)
+{
+	int i, limit;
+
+	VEC_CLEAR (keysmenu.items);
+
+	limit = hipnotic ? NUMCOMMANDS : NUMCOMMANDS - 2;
+	for (i = 0; i < limit; i++)
+	{
+		// filter item by device type
+		if (!(keysmenu.devicemask & menubinds[i].devicemask))
+			continue;
+
+		// if we have two separators in a row, overwrite the old one
+		if (VEC_SIZE (keysmenu.items) > 0 && !menubinds[i].command[0] && !VEC_LAST(keysmenu.items).command[0])
+			VEC_LAST(keysmenu.items) = menubinds[i];
+		else // otherwise add a new item
+			VEC_PUSH (keysmenu.items, menubinds[i]);
+	}
+
+	keysmenu.list.numitems = (int) VEC_SIZE (keysmenu.items);
+	keysmenu.list.cursor = 0;
+	keysmenu.list.scroll = 0;
+}
+
 void M_Menu_Keys_f (void)
 {
+	keydevice_t lastactive = IN_GetLastActiveDeviceType ();
+
 	IN_DeactivateForMenu();
 	key_dest = key_menu;
 	m_state = m_keys;
 	m_entersound = true;
-	keysmenu.list.cursor = 0;
-	keysmenu.list.scroll = 0;
-	keysmenu.list.numitems = hipnotic ? NUMCOMMANDS : NUMCOMMANDS - 2;
 	keysmenu.list.isactive_fn = M_Keys_IsSelectable;
 	keysmenu.list.search.match_fn = M_Keys_Match;
+	keysmenu.devicemask = (lastactive == KD_GAMEPAD) ? KDM_GAMEPAD : KDM_KEYBOARD_AND_MOUSE;
 
+	M_Keys_Populate ();
 	M_List_ClearSearch (&keysmenu.list);
 
 	M_Keys_UpdateLayout ();
@@ -4537,7 +4584,7 @@ void M_Menu_Keys_f (void)
 
 void M_FindKeysForCommand (const char *command, int *threekeys)
 {
-	Key_GetKeysForCommand (command, threekeys, 3);
+	Key_GetKeysForCommand (command, threekeys, 3, keysmenu.devicemask);
 }
 
 void M_UnbindCommand (const char *command)
@@ -4559,11 +4606,12 @@ extern qpic_t	*pic_up, *pic_down;
 
 void M_Keys_Draw (void)
 {
-	int		firstvis, numvis;
-	int		i, j, x, y, cols;
-	int		keys[3];
+	int			firstvis, numvis;
+	int			i, j, x, y, cols;
+	int			keys[3];
 	const char	*name;
-	qpic_t	*p;
+	const char	*hint;
+	qpic_t		*p;
 
 	M_Keys_UpdateLayout ();
 	M_List_Update (&keysmenu.list);
@@ -4572,20 +4620,17 @@ void M_Keys_Draw (void)
 	y = keysmenu.y;
 	cols = 40;
 
+	// draw title plaque
 	p = Draw_CachePic ("gfx/ttl_cstm.lmp");
 	M_DrawPic ( (320-p->width)/2, y + 4, p);
 
-	if (bind_grab)
-		M_Print (12, y + 32, "Press a key or button for this action");
-	else
-	{
-		const char *msg = IN_HasGamepad () ?
-			"Enter/A to change, backspace/Y to clear" :
-			"Enter to change, backspace to clear";
-		M_PrintAligned (160, y + 32, ALIGN_CENTER, msg);
-	}
+	// draw tabs
+	M_PrintAlignedEx (320*1/4, y + 32, ALIGN_CENTER, 8, keysmenu.devicemask == KDM_GAMEPAD, "Keyboard & Mouse");
+	M_PrintAlignedEx (320*3/4, y + 32, ALIGN_CENTER, 8, keysmenu.devicemask != KDM_GAMEPAD, "Gamepad");
+	i = keysmenu.devicemask == KDM_GAMEPAD ? 3 : 1;
+	M_DrawQuakeBar (320*i/4 - 20*4, y + 40, 20);
 
-	y += KEYLIST_OFS;
+	y += KEYLIST_TOP;
 
 	if (M_List_GetOverflow (&keysmenu.list) > 0)
 	{
@@ -4601,17 +4646,17 @@ void M_Keys_Draw (void)
 	{
 		i = firstvis++;
 
-		if (bindnames[i][0][0])
+		if (keysmenu.items[i].command[0])
 		{
 			char buf[64];
 			qboolean active = (i == keysmenu.list.cursor && bind_grab);
 			void (*print_fn) (int cx, int cy, const char *text) =
 				active ? M_PrintWhite : M_Print;
 
-			COM_TintSubstring (bindnames[i][1], keysmenu.list.search.text, buf, sizeof (buf));
+			COM_TintSubstring (keysmenu.items[i].description, keysmenu.list.search.text, buf, sizeof (buf));
 			M_PrintDotFill (0, y, buf, 17, !active);
 
-			M_FindKeysForCommand (bindnames[i][0], keys);
+			M_FindKeysForCommand (keysmenu.items[i].command, keys);
 			// If we already have 3 keys bound to this action
 			// they will all be unbound when a new one is assigned.
 			// We show this outcome to the user before it actually
@@ -4624,16 +4669,23 @@ void M_Keys_Draw (void)
 			{
 				if (j)
 				{
-					print_fn (x + 8, y, "or");
-					x += 32;
+					GL_SetCanvasColor (1.f, 1.f, 1.f, 0.375f);
+					print_fn (x, y, ",");
+					GL_SetCanvasColor (1.f, 1.f, 1.f, 1.f);
+					x += 16;
 				}
-				name = Key_KeynumToString (keys[j]);
+				name = Key_KeynumToFriendlyString (keys[j]);
 				print_fn (x, y, name);
 				x += strlen (name) * 8;
 			}
 
 			if (j == 0)
+			{
+				if (!active)
+					GL_SetCanvasColor (1.f, 1.f, 1.f, 0.375f);
 				print_fn (x, y, "???");
+				GL_SetCanvasColor (1.f, 1.f, 1.f, 1.f);
+			}
 		}
 
 		if (i == keysmenu.list.cursor)
@@ -4646,7 +4698,20 @@ void M_Keys_Draw (void)
 
 		y += 8;
 	}
+
+	// draw search box
 	M_List_DrawSearch (&keysmenu.list, 0, y + 4, 16);
+
+	// show hint at the bottom
+	if (bind_grab)
+		hint = keysmenu.devicemask == KDM_GAMEPAD ?
+			va ("Press new button, or %s to cancel", Key_KeynumToFriendlyString (K_START)) :
+			va ("Press new key, or %s to cancel", Key_KeynumToFriendlyString (K_ESCAPE)) ;
+	else
+		hint = IN_GetLastActiveDeviceType () == KD_GAMEPAD ?
+			va ("%s = change, %s = clear", Key_KeynumToFriendlyString (K_ABUTTON), Key_KeynumToFriendlyString (K_YBUTTON)):
+			va ("%s = change, %s = clear", Key_KeynumToFriendlyString (K_ENTER), Key_KeynumToFriendlyString (K_BACKSPACE));
+	M_PrintAligned (160, y + 16, ALIGN_CENTER, hint);
 }
 
 
@@ -4655,15 +4720,23 @@ void M_Keys_Key (int k)
 	char	cmd[80];
 	int		keys[3];
 
-	if (bind_grab)
-	{	// defining a key
+	if (bind_grab) // defining a key
+	{
 		M_ThrottledSound ("misc/menu1.wav");
+
 		if ((k != K_ESCAPE) && (k != '`'))
 		{
-			M_FindKeysForCommand (bindnames[keysmenu.list.cursor][0], keys);
+			const char *command;
+
+			// wrong key type?
+			if (!(Key_GetDeviceMaskForKeynum (k) & keysmenu.devicemask))
+				return;
+
+			command = keysmenu.items[keysmenu.list.cursor].command;
+			M_FindKeysForCommand (command, keys);
 			if (keys[2] != -1)
-				M_UnbindCommand (bindnames[keysmenu.list.cursor][0]);
-			sprintf (cmd, "bind \"%s\" \"%s\"\n", Key_KeynumToString (k), bindnames[keysmenu.list.cursor][0]);
+				M_UnbindCommand (command);
+			sprintf (cmd, "bind \"%s\" \"%s\"\n", Key_KeynumToString (k), command);
 			Cbuf_InsertText (cmd);
 		}
 
@@ -4684,6 +4757,14 @@ void M_Keys_Key (int k)
 		M_Menu_Options_f ();
 		break;
 
+	case K_TAB:
+	case K_LSHOULDER:
+	case K_RSHOULDER:
+		M_ThrottledSound ("misc/menu1.wav");
+		keysmenu.devicemask ^= KDM_GAMEPAD | KDM_KEYBOARD_AND_MOUSE;
+		M_Keys_Populate ();
+		break;
+
 	case K_ENTER:		// go into bind mode
 	case K_KP_ENTER:
 	case K_ABUTTON:
@@ -4702,7 +4783,7 @@ void M_Keys_Key (int k)
 	case K_DEL:
 	case K_YBUTTON:
 		M_ThrottledSound ("misc/menu2.wav");
-		M_UnbindCommand (bindnames[keysmenu.list.cursor][0]);
+		M_UnbindCommand (keysmenu.items[keysmenu.list.cursor].command);
 		break;
 	}
 }
@@ -4710,7 +4791,7 @@ void M_Keys_Key (int k)
 
 void M_Keys_Mousemove (int cx, int cy)
 {
-	M_List_Mousemove (&keysmenu.list, cy - keysmenu.y - KEYLIST_OFS);
+	M_List_Mousemove (&keysmenu.list, cy - keysmenu.y - KEYLIST_TOP);
 }
 
 textmode_t M_Keys_TextEntry (void)

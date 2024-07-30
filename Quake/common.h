@@ -161,6 +161,7 @@ typedef struct vec_header_t {
 #define VEC_POP(v)				do { SDL_assert(v && VEC_HEADER(v).size >= 1); VEC_HEADER(v).size--; } while (0)
 #define VEC_POP_N(v,n)			do { SDL_assert(v && VEC_HEADER(v).size >= (n)); VEC_HEADER(v).size -= (n); } while (0)
 #define VEC_SIZE(v)				((v) ? VEC_HEADER(v).size : 0)
+#define VEC_LAST(v)				((v)[VEC_SIZE(v)-1])
 #define VEC_FREE(v)				Vec_Free((void**)&(v))
 #define VEC_CLEAR(v)			Vec_Clear((void**)&(v))
 

@@ -150,8 +150,31 @@ static const keyname_t keynames[] =
 	{"PADDLE3", K_PADDLE3},
 	{"PADDLE4", K_PADDLE4},
 	{"TOUCHPAD", K_TOUCHPAD},
+	{"JOY_START", K_START},
+	{"JOY_BACK", K_BACK},
 
 	{NULL,		0}
+};
+
+static const char *const xbox_names[K_GAMEPAD_COUNT] =
+{
+	#define GAMEPAD_KEY_NAME(keycode, value, xboxname, psname, nintendoname) xboxname,
+	GAMEPAD_KEY_LIST (GAMEPAD_KEY_NAME)
+	#undef GAMEPAD_KEY_NAME
+};
+
+static const char *const ps_names[K_GAMEPAD_COUNT] =
+{
+	#define GAMEPAD_KEY_NAME(keycode, value, xboxname, psname, nintendoname) psname,
+	GAMEPAD_KEY_LIST (GAMEPAD_KEY_NAME)
+	#undef GAMEPAD_KEY_NAME
+};
+
+static const char *const nintendo_names[K_GAMEPAD_COUNT] =
+{
+	#define GAMEPAD_KEY_NAME(keycode, value, xboxname, psname, nintendoname) nintendoname,
+	GAMEPAD_KEY_LIST (GAMEPAD_KEY_NAME)
+	#undef GAMEPAD_KEY_NAME
 };
 
 /*
@@ -656,6 +679,34 @@ const char *Key_KeynumToString (int keynum)
 	return "<UNKNOWN KEYNUM>";
 }
 
+/*
+===================
+Key_KeynumToFriendlyString
+
+Returns a user-facing string for the given keynum.
+===================
+*/
+const char *Key_KeynumToFriendlyString (int keynum)
+{
+	if (keynum >= K_GAMEPAD_BEGIN && keynum < K_GAMEPAD_END)
+	{
+		const char *str = NULL;
+
+		switch (IN_GetGamepadType ())
+		{
+		default:
+		case GAMEPAD_XBOX:			str = xbox_names		[keynum - K_GAMEPAD_BEGIN]; break;
+		case GAMEPAD_PLAYSTATION:	str = ps_names			[keynum - K_GAMEPAD_BEGIN]; break;
+		case GAMEPAD_NINTENDO:		str = nintendo_names	[keynum - K_GAMEPAD_BEGIN]; break;
+		}
+
+		if (str && *str)
+			return str;
+	}
+
+	return Key_KeynumToString (keynum);
+}
+
 
 /*
 ===================
@@ -681,10 +732,37 @@ void Key_SetBinding (int keynum, const char *binding)
 
 /*
 ===================
+Key_GetDeviceForKeynum
+===================
+*/
+keydevice_t Key_GetDeviceForKeynum (int keynum)
+{
+	if (keynum < 0 || keynum >= NUM_KEYCODES)
+		return KD_NONE;
+	if (keynum >= K_MOUSE_BEGIN && keynum < K_MOUSE_END)
+		return KD_MOUSE;
+	if (keynum >= K_GAMEPAD_BEGIN && keynum < K_GAMEPAD_END)
+		return KD_GAMEPAD;
+	return KD_KEYBOARD;
+}
+
+/*
+===================
+Key_GetDeviceMaskForKeynum
+===================
+*/
+keydevicemask_t Key_GetDeviceMaskForKeynum (int keynum)
+{
+	keydevice_t device = Key_GetDeviceForKeynum (keynum);
+	return device == KD_NONE ? KDM_NONE : (keydevicemask_t) (1 << (int)device);
+}
+
+/*
+===================
 Key_GetKeysForCommand
 ===================
 */
-int Key_GetKeysForCommand (const char *command, int *keys, int maxkeys)
+int Key_GetKeysForCommand (const char *command, int *keys, int maxkeys, keydevicemask_t devmask)
 {
 	int i, count;
 
@@ -699,6 +777,8 @@ int Key_GetKeysForCommand (const char *command, int *keys, int maxkeys)
 	{
 		if (keybindings[i] && !strcmp (keybindings[i], command))
 		{
+			if ((Key_GetDeviceMaskForKeynum (i) & devmask) == 0)
+				continue;
 			keys[count++] = i;
 			if (count == maxkeys)
 				break;
@@ -1080,10 +1160,10 @@ void Key_EventWithKeycode (int key, qboolean down, int keycode)
 		else if (key >= 200 && !keybindings[key] && key_dest == key_game && !cls.demoplayback)
 		{
 			int optkey;
-			if (Key_GetKeysForCommand ("menu_options", &optkey, 1))
-				Con_Printf ("%s is unbound, hit %s to set.\n", Key_KeynumToString (key), Key_KeynumToString (optkey));
+			if (Key_GetKeysForCommand ("menu_options", &optkey, 1, KDM_ANY))
+				Con_Printf ("%s is unbound, hit %s to set.\n", Key_KeynumToFriendlyString (key), Key_KeynumToFriendlyString (optkey));
 			else
-				Con_Printf ("%s is unbound, use Options menu to set.\n", Key_KeynumToString (key));
+				Con_Printf ("%s is unbound, use Options menu to set.\n", Key_KeynumToFriendlyString (key));
 		}
 	}
 	else if (!keydown[key])
