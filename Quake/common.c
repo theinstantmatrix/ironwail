@@ -2431,13 +2431,16 @@ COM_ValidateGameDirs
 */
 static qboolean COM_ValidateGameDirs (const char *newgamedirs)
 {
-	const char	*newpath;
-	int			i;
+	char	dirscopy[1024];
+	char	*newpath;
+	int		i;
+
+	q_strlcpy (dirscopy, newgamedirs, sizeof (dirscopy));
 
 	// parse the individual semicolon-separated gamedirs (e.g. id1;ad;ad_heresp1)
-	for (newpath = newgamedirs; newpath && *newpath; )
+	for (newpath = dirscopy; newpath && *newpath; )
 	{
-		char *p = strchr(newpath, ';');
+		char *p = strchr (newpath, ';');
 		if (p)
 			*p++ = 0;
 
