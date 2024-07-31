@@ -361,6 +361,9 @@ static qboolean IN_UseController (int device_index)
 		joy_active_type = GAMEPAD_NINTENDO;
 		break;
 	}
+#else
+	// No controller type info (old SDL headers), assume Xbox-compatible
+	joy_active_type = GAMEPAD_XBOX;
 #endif // SDL_VERSION_ATLEAST(2, 0, 12)
 
 #if SDL_VERSION_ATLEAST(2, 0, 14)
