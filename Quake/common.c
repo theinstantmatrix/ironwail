@@ -2426,6 +2426,40 @@ void COM_ResetGameDirectories(const char *newgamedirs)
 
 /*
 =================
+COM_ValidateGameDirs
+=================
+*/
+static qboolean COM_ValidateGameDirs (const char *newgamedirs)
+{
+	const char	*newpath;
+	int			i;
+
+	// parse the individual semicolon-separated gamedirs (e.g. id1;ad;ad_heresp1)
+	for (newpath = newgamedirs; newpath && *newpath; )
+	{
+		char *p = strchr(newpath, ';');
+		if (p)
+			*p++ = 0;
+
+		// each gamedir must be present in at least one basedir
+		for (i = 0; i < com_numbasedirs; i++)
+			if (Sys_FileType(va("%s/%s", com_basedirs[i], newpath)) == FS_ENT_DIRECTORY)
+				break;
+
+		if (i == com_numbasedirs)
+		{
+			Con_Printf ("No such game directory \"%s\"\n", newpath);
+			return false;
+		}
+
+		newpath = p;
+	}
+
+	return true;
+}
+
+/*
+=================
 COM_SwitchGame
 =================
 */
@@ -2437,6 +2471,9 @@ void COM_SwitchGame (const char *paths)
 		Con_Printf("\"game\" is already \"%s\"\n", COM_GetGameNames(true));
 		return;
 	}
+
+	if (!COM_ValidateGameDirs (paths))
+		return;
 
 	Host_WaitForSaveThread ();
 
@@ -2533,7 +2570,6 @@ static void COM_Game_f (void)
 		}
 
 		COM_SwitchGame (paths);
-
 	}
 	else //Diplay the current gamedir
 		Con_Printf("\"game\" is \"%s\"\n", COM_GetGameNames(true));
