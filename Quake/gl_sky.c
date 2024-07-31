@@ -385,7 +385,7 @@ static void Sky_WindCommand_f (void)
 Sky_LoadSkyBox
 ==================
 */
-static const char *suf[6] = {"rt", "bk", "lf", "ft", "up", "dn"};
+static const char *const suf[6] = {"rt", "bk", "lf", "ft", "up", "dn"};
 void Sky_LoadSkyBox (const char *name)
 {
 	int			i, mark, width[6], height[6], samesize, numloaded;
