@@ -2426,6 +2426,24 @@ void COM_ResetGameDirectories(const char *newgamedirs)
 
 /*
 =================
+COM_GameDirExists
+
+Checks if a gamedir exists in any basedir
+=================
+*/
+static qboolean COM_GameDirExists (const char *game)
+{
+	int i;
+
+	for (i = 0; i < com_numbasedirs; i++)
+		if (Sys_FileType (va ("%s/%s", com_basedirs[i], game)) == FS_ENT_DIRECTORY)
+			return true;
+
+	return false;
+}
+
+/*
+=================
 COM_ValidateGameDirs
 =================
 */
@@ -2433,7 +2451,6 @@ static qboolean COM_ValidateGameDirs (const char *newgamedirs)
 {
 	char	dirscopy[1024];
 	char	*newpath;
-	int		i;
 
 	q_strlcpy (dirscopy, newgamedirs, sizeof (dirscopy));
 
@@ -2444,12 +2461,7 @@ static qboolean COM_ValidateGameDirs (const char *newgamedirs)
 		if (p)
 			*p++ = 0;
 
-		// each gamedir must be present in at least one basedir
-		for (i = 0; i < com_numbasedirs; i++)
-			if (Sys_FileType(va("%s/%s", com_basedirs[i], newpath)) == FS_ENT_DIRECTORY)
-				break;
-
-		if (i == com_numbasedirs)
+		if (!COM_GameDirExists (newpath))
 		{
 			Con_Printf ("No such game directory \"%s\"\n", newpath);
 			return false;
@@ -3256,6 +3268,8 @@ void COM_InitFilesystem (void) //johnfitz -- modified based on topaz's tutorial
 		p = com_argv[i + 1];
 		if (!*p || !strcmp(p, ".") || strstr(p, "..") || strstr(p, "/") || strstr(p, "\\") || strstr(p, ":"))
 			Sys_Error ("gamedir should be a single directory name, not a path\n");
+		if (!COM_GameDirExists (p))
+			Sys_Error ("No such game directory \"%s\"", p);
 		com_modified = true;
 		if (p != NULL)
 			COM_AddGameDirectory (p);
