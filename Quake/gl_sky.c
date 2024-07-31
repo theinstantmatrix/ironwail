@@ -184,10 +184,10 @@ void Sky_LoadTextureQ64 (qmodel_t *mod, texture_t *mt)
 
 /*
 =================
-Sky_ClearWind
+Skywind_Clear
 =================
 */
-static void Sky_ClearWind (void)
+static void Skywind_Clear (void)
 {
 	if (!skybox)
 		return;
@@ -199,17 +199,20 @@ static void Sky_ClearWind (void)
 
 /*
 =================
-Sky_LoadWind_f
+Skywind_Load_f
 =================
 */
-static void Sky_LoadWind_f (void)
+static void Skywind_Load_f (void)
 {
 	char relname[MAX_QPATH];
 	char *buf;
 	const char *data;
 
 	if (!skybox)
+	{
+		Con_Printf ("No skybox loaded\n");
 		return;
+	}
 
 	q_snprintf (relname, sizeof (relname), "gfx/env/%s" SKYWIND_CFG, skybox->name);
 	buf = (char *) COM_LoadMallocFile (relname, NULL);
@@ -225,11 +228,11 @@ static void Sky_LoadWind_f (void)
 
 	if (strcmp (com_token, "skywind") != 0)
 	{
-		Con_Printf ("Sky_LoadWind_f: first token must be 'skywind'.\n");
+		Con_Printf ("Skywind_Load_f: first token must be 'skywind'.\n");
 		goto done;
 	}
 
-	Sky_ClearWind ();
+	Skywind_Clear ();
 
 	if ((data = COM_Parse (data)) != NULL)
 		skybox->wind_dist = CLAMP (-2.0, atof (com_token), 2.0);
@@ -249,17 +252,20 @@ done:
 
 /*
 =================
-Sky_SaveWind_f
+Skywind_Save_f
 =================
 */
-static void Sky_SaveWind_f (void)
+static void Skywind_Save_f (void)
 {
 	char relname[MAX_QPATH];
 	char path[MAX_OSPATH];
 	FILE *f;
 
 	if (!skybox)
+	{
+		Con_Printf ("No skybox loaded\n");
 		return;
+	}
 
 	q_snprintf (relname, sizeof (relname), "gfx/env/%s" SKYWIND_CFG, skybox->name);
 	q_snprintf (path, sizeof (path), "%s/%s", com_gamedir, relname);
@@ -288,10 +294,71 @@ static void Sky_SaveWind_f (void)
 
 /*
 =================
-Sky_WindCommand_f
+Skywind_LookDir_f
 =================
 */
-static void Sky_WindCommand_f (void)
+static void Skywind_LookDir_f (void)
+{
+	if (cls.state != ca_connected)
+		return;
+
+	if (!skybox)
+	{
+		Con_Printf ("No skybox loaded\n");
+		return;
+	}
+
+	skybox->wind_yaw = cl.viewangles[YAW];
+	skybox->wind_pitch = cl.viewangles[PITCH];
+
+	if (Cmd_Argc () >= 2)
+		skybox->wind_period = atof (Cmd_Argv (1));
+	else if (!skybox->wind_period)
+		skybox->wind_period = 30.f;
+
+	if (Cmd_Argc () >= 3)
+		skybox->wind_dist = CLAMP (-2.0, atof (Cmd_Argv (2)), 2.0);
+	else if (!skybox->wind_dist)
+		skybox->wind_dist = 1.f;
+}
+
+/*
+=================
+Skywind_Rotate_f
+=================
+*/
+static void Skywind_Rotate_f (void)
+{
+	if (cls.state != ca_connected)
+		return;
+
+	if (!skybox)
+	{
+		Con_Printf ("No skybox loaded\n");
+		return;
+	}
+
+	if (Cmd_Argc () < 2)
+	{
+		Con_Printf (
+			"usage:\n"
+			"   %s <yawdelta> [pitchdelta]\n",
+			Cmd_Argv (0)
+		);
+		return;
+	}
+
+	skybox->wind_yaw = fmod (skybox->wind_yaw + atof (Cmd_Argv (1)), 360.0);
+	if (Cmd_Argc () >= 3)
+		skybox->wind_pitch = fmod (skybox->wind_pitch + atof (Cmd_Argv (2)) + 90.0, 180.0) - 90.0;
+}
+
+/*
+=================
+Skywind_f
+=================
+*/
+static void Skywind_f (void)
 {
 	if (cls.state != ca_connected)
 		return;
@@ -318,56 +385,6 @@ static void Sky_WindCommand_f (void)
 			skybox->wind_period,
 			skybox->wind_pitch
 		);
-		return;
-	}
-
-	if (!q_strcasecmp (Cmd_Argv (1), "save"))
-	{
-		Sky_SaveWind_f ();
-		return;
-	}
-
-	if (!q_strcasecmp (Cmd_Argv (1), "load"))
-	{
-		Sky_LoadWind_f ();
-		return;
-	}
-
-	if (!q_strcasecmp (Cmd_Argv (1), "setview"))
-	{
-		skybox->wind_yaw = cl.viewangles[YAW];
-		skybox->wind_pitch = cl.viewangles[PITCH];
-
-		if (Cmd_Argc () >= 3)
-			skybox->wind_period = atof (Cmd_Argv (2));
-		else if (!skybox->wind_period)
-			skybox->wind_period = 30.f;
-
-		if (Cmd_Argc () >= 4)
-			skybox->wind_dist = CLAMP (-2.0, atof (Cmd_Argv (3)), 2.0);
-		else if (!skybox->wind_dist)
-			skybox->wind_dist = 1.f;
-
-		return;
-	}
-
-	if (!q_strcasecmp (Cmd_Argv (1), "rotate"))
-	{
-		if (Cmd_Argc () < 3)
-		{
-			Con_Printf (
-				"usage:\n"
-				"   %s %s <value>\n",
-				Cmd_Argv (0),
-				Cmd_Argv (1)
-			);
-			return;
-		}
-
-		skybox->wind_yaw = fmod (skybox->wind_yaw + atof (Cmd_Argv (2)), 360.0);
-		if (Cmd_Argc () >= 4)
-			skybox->wind_pitch = fmod (skybox->wind_pitch + atof (Cmd_Argv (3)) + 90.0, 180.0) - 90.0;
-
 		return;
 	}
 
@@ -493,7 +510,7 @@ void Sky_LoadSkyBox (const char *name)
 	VEC_PUSH (skybox_list, newsky);
 	skybox = &skybox_list[VEC_SIZE (skybox_list) - 1];
 
-	Sky_LoadWind_f ();
+	Skywind_Load_f ();
 }
 
 /*
@@ -628,9 +645,11 @@ void Sky_Init (void)
 	Cvar_SetCallback (&r_skyfog, R_SetSkyfog_f);
 
 	Cmd_AddCommand ("sky",Sky_SkyCommand_f);
-	Cmd_AddCommand ("skywind",Sky_WindCommand_f);
-	Cmd_AddCommand ("skywind_save",Sky_SaveWind_f);
-	Cmd_AddCommand ("skywind_load",Sky_LoadWind_f);
+	Cmd_AddCommand ("skywind",Skywind_f);
+	Cmd_AddCommand ("skywind_save",Skywind_Save_f);
+	Cmd_AddCommand ("skywind_load",Skywind_Load_f);
+	Cmd_AddCommand ("skywind_lookdir",Skywind_LookDir_f);
+	Cmd_AddCommand ("skywind_rotate",Skywind_Rotate_f);
 }
 
 //==============================================================================
