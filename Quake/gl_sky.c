@@ -308,14 +308,17 @@ static void Skywind_LookDir_f (void)
 		return;
 	}
 
-	skybox->wind_yaw = cl.viewangles[YAW];
-	skybox->wind_pitch = cl.viewangles[PITCH];
+	// invert view direction so that clouds move towards the player, not away from them
+	skybox->wind_yaw = fmod (cl.viewangles[YAW] + 180.0, 360.0);
+	skybox->wind_pitch = -cl.viewangles[PITCH];
 
+	// first argument, if present, overrides the loop duration (default: 30 seconds)
 	if (Cmd_Argc () >= 2)
 		skybox->wind_period = atof (Cmd_Argv (1));
 	else if (!skybox->wind_period)
 		skybox->wind_period = 30.f;
 
+	// second argument, if present, overrides the amplitude of the movement (default: 1.0)
 	if (Cmd_Argc () >= 3)
 		skybox->wind_dist = CLAMP (-2.0, atof (Cmd_Argv (2)), 2.0);
 	else if (!skybox->wind_dist)
