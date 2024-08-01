@@ -97,12 +97,12 @@ static const int buttonremap[] =
 };
 
 /* total accumulated mouse movement since last frame */
-static int	total_dx, total_dy = 0;
-static float gyro_yaw, gyro_pitch = 0;
+static int		total_dx = 0, total_dy = 0;
+static float	gyro_yaw = 0.f, gyro_pitch = 0.f;
 
 // used for gyro calibration
-static float gyro_accum[3];
-static unsigned int num_samples;
+static float gyro_accum[3] = {0.f, 0.f, 0.f};
+static unsigned int num_samples = 0;
 static unsigned int updates_countdown = 0;
 
 static qboolean gyro_present = false;
