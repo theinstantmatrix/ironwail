@@ -150,8 +150,11 @@ static const keyname_t keynames[] =
 	{"PADDLE3", K_PADDLE3},
 	{"PADDLE4", K_PADDLE4},
 	{"TOUCHPAD", K_TOUCHPAD},
-	{"JOY_START", K_START},
-	{"JOY_BACK", K_BACK},
+
+	// Gamepad "Start" and "Back" buttons are always mapped to ESC/TAB.
+	// We don't expose the key names in order to avoid having the player bind them in the console.
+	//{"JOY_START", K_START},
+	//{"JOY_BACK", K_BACK},
 
 	{NULL,		0}
 };
