@@ -2379,7 +2379,6 @@ void M_Setup_Key (int k)
 
 	case K_LEFTARROW:
 	//case K_MOUSE2:
-	case K_MWHEELDOWN:
 		if (setup_cursor < 2)
 			return;
 		M_ThrottledSound ("misc/menu3.wav");
@@ -2389,7 +2388,6 @@ void M_Setup_Key (int k)
 			setup_bottom = setup_bottom - 1;
 		break;
 	case K_RIGHTARROW:
-	case K_MWHEELUP:
 		if (setup_cursor < 2)
 			return;
 forward:
@@ -4455,13 +4453,11 @@ void M_Options_Key (int k)
 		return;
 
 	case K_LEFTARROW:
-	case K_MWHEELDOWN:
 	//case K_MOUSE2:
 		M_AdjustSliders (-1);
 		break;
 
 	case K_RIGHTARROW:
-	case K_MWHEELUP:
 		M_AdjustSliders (1);
 		break;
 
@@ -5730,7 +5726,6 @@ void M_GameOptions_Key (int key)
 		break;
 
 	case K_LEFTARROW:
-	case K_MWHEELDOWN:
 	//case K_MOUSE2:
 		if (gameoptions_cursor == 0)
 			break;
@@ -5739,7 +5734,6 @@ void M_GameOptions_Key (int key)
 		break;
 
 	case K_RIGHTARROW:
-	case K_MWHEELUP:
 		if (gameoptions_cursor == 0)
 			break;
 		M_ThrottledSound ("misc/menu3.wav");
