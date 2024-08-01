@@ -98,7 +98,7 @@ static const int buttonremap[] =
 
 /* total accumulated mouse movement since last frame */
 static int		total_dx = 0, total_dy = 0;
-static float	gyro_yaw = 0.f, gyro_pitch = 0.f;
+static float	gyro_yaw = 0.f, gyro_pitch = 0.f, gyro_raw_mag = 0.f;
 
 // used for gyro calibration
 static float gyro_accum[3] = {0.f, 0.f, 0.f};
@@ -308,7 +308,7 @@ static qboolean IN_UseController (int device_index)
 		joy_active_type = GAMEPAD_NONE;
 		Cvar_SetValueQuick (&joy_device, -1);
 		gyro_present = false;
-		gyro_yaw = gyro_pitch = 0.f;
+		gyro_yaw = gyro_pitch = gyro_raw_mag = 0.f;
 	}
 
 	if (device_index == -1)
@@ -1247,6 +1247,50 @@ qboolean IN_HasGyro (void)
 	return gyro_present;
 }
 
+float IN_GetRawGyroMagnitude (void)
+{
+	if (!gyro_present)
+		return 0.f;
+	return gyro_raw_mag;
+}
+
+float IN_GetRawLookMagnitude (void)
+{
+	joyaxis_t axis;
+	if (!joy_active_controller)
+		return 0.f;
+
+	axis.x = joy_axisstate.axisvalue[joy_swapmovelook.value ? SDL_CONTROLLER_AXIS_LEFTX : SDL_CONTROLLER_AXIS_RIGHTX];
+	axis.y = joy_axisstate.axisvalue[joy_swapmovelook.value ? SDL_CONTROLLER_AXIS_LEFTY : SDL_CONTROLLER_AXIS_RIGHTY];
+
+	return IN_AxisMagnitude (axis);
+}
+
+float IN_GetRawMoveMagnitude (void)
+{
+	joyaxis_t axis;
+	if (!joy_active_controller)
+		return 0.f;
+
+	axis.x = joy_axisstate.axisvalue[joy_swapmovelook.value ? SDL_CONTROLLER_AXIS_RIGHTX : SDL_CONTROLLER_AXIS_LEFTX];
+	axis.y = joy_axisstate.axisvalue[joy_swapmovelook.value ? SDL_CONTROLLER_AXIS_RIGHTY : SDL_CONTROLLER_AXIS_LEFTY];
+
+	return IN_AxisMagnitude (axis);
+}
+
+float IN_GetRawTriggerMagnitude (void)
+{
+	float left, right;
+	if (!joy_active_controller)
+		return 0.f;
+
+	left = fabs (joy_axisstate.axisvalue[SDL_CONTROLLER_AXIS_TRIGGERLEFT]);
+	right = fabs (joy_axisstate.axisvalue[SDL_CONTROLLER_AXIS_TRIGGERRIGHT]);
+
+	return q_max (left, right);
+
+}
+
 qboolean IN_IsCalibratingGyro (void)
 {
 	return updates_countdown != 0;
@@ -1383,6 +1427,9 @@ void IN_SendKeyEvents (void)
 				else
 					gyro_yaw = -(event.csensor.data[2] - gyro_calibration_z.value); // roll
 				gyro_pitch = event.csensor.data[0] - gyro_calibration_x.value;
+
+				// Save unfiltered magnitude to display in the UI
+				gyro_raw_mag = RAD2DEG (sqrt (gyro_yaw*gyro_yaw + gyro_pitch*gyro_pitch));
 
 				gyro_yaw = IN_FilterGyroSample (prev_yaw, gyro_yaw);
 				gyro_pitch = IN_FilterGyroSample (prev_pitch, gyro_pitch);

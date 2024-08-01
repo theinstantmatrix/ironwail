@@ -48,8 +48,13 @@ typedef enum gyromode_t
 } gyromode_t;
 
 qboolean IN_HasGyro (void);
+float IN_GetRawGyroMagnitude (void);
 void IN_StartGyroCalibration (void);
 qboolean IN_IsCalibratingGyro (void);
+
+float IN_GetRawLookMagnitude (void);
+float IN_GetRawMoveMagnitude (void);
+float IN_GetRawTriggerMagnitude (void);
 
 typedef enum gamepadtype_t
 {

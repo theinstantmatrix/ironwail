@@ -3801,27 +3801,58 @@ void M_AdjustSliders (int dir)
 	}
 }
 
-
-void M_DrawSlider (int x, int y, float range, float value, const char *format)
+typedef struct
 {
-	int		i;
-	char	buffer[6];
+	float		frac;
+	char		glyph;
+	char		yofs;
+} slidermarker_t;
 
-	if (range < 0)
-		range = 0;
-	if (range > 1)
-		range = 1;
+void M_DrawSliderWithMarkers (int x, int y, float range, const slidermarker_t *markers, int nummarkers, const char *desc)
+{
+	int i;
+
+	range = CLAMP (0.f, range, 1.f);
 
 	M_DrawCharacter (x-8, y, 128);
 	for (i = 0; i < SLIDER_RANGE; i++)
 		M_DrawCharacter (x + i*8, y, 129);
 	M_DrawCharacter (x+i*8, y, 130);
+
+	for (i = 0; i < nummarkers; i++)
+	{
+		const slidermarker_t *marker = &markers[i];
+		M_DrawCharacter (x + (SLIDER_RANGE-1)*8 * CLAMP (0.f, marker->frac, 1.f), y + marker->yofs, marker->glyph);
+	}
+
 	M_DrawCharacter (x + (SLIDER_RANGE-1)*8 * range, y, 131);
 
-	q_snprintf (buffer, sizeof (buffer), format, value);
 	i = x + (SLIDER_RANGE+2)*8;
-	if (i + (int)(Q_COUNTOF (buffer) - 1) *8 < glcanvas.right)
-		M_Print (i, y, buffer);
+	if (i + 5*8 < glcanvas.right)
+		M_Print (i, y, desc);
+}
+
+void M_DrawSlider (int x, int y, float range, const char *desc)
+{
+	M_DrawSliderWithMarkers (x, y, range, NULL, 0, desc);
+}
+
+void M_DrawThresholdSlider (int x, int y, float range, qboolean enabled, float live, const char *desc)
+{
+	slidermarker_t	marker;
+	char			buf[6];
+
+	marker.frac = live;
+	marker.yofs = 0;
+	marker.glyph = 0x8E;
+
+	if (enabled && marker.frac > range)
+	{
+		marker.glyph ^= 0x80;
+		desc = COM_TintString (desc, buf, sizeof (buf));
+	}
+
+	M_DrawSliderWithMarkers (x, y, range, &marker, enabled ? 1 : 0, desc);
 }
 
 void M_DrawCheckbox (int x, int y, int on)
@@ -3980,12 +4011,14 @@ static void M_Options_DrawItem (int y, int item)
 	const char	*str;
 	int			x = OPTIONS_MIDPOS;
 	float		r, l;
+	qboolean	selected;
 
 	if ((unsigned int) item >= countof (options_names))
 		return;
 
 	COM_TintSubstring (options_names[item], optionsmenu.list.search.text, buf, sizeof (buf));
 	M_PrintAligned (x - 28, y, ALIGN_RIGHT, buf);
+	selected = M_Options_GetSelected () == item;
 
 	switch (item)
 	{
@@ -4000,9 +4033,9 @@ static void M_Options_DrawItem (int y, int item)
 	case OPT_SCALE:
 		l = (vid.width / 320.0) - 1;
 		r = l > 0 ? (scr_conscale.value - 1) / l : 0;
-		if (slider_grab && M_Options_GetSelected () == OPT_SCALE)
+		if (slider_grab && selected)
 			r = target_scale_frac;
-		M_DrawSlider (x, y, r, scr_conscale.value, "%.1f");
+		M_DrawSlider (x, y, r, va ("%.1f", scr_conscale.value));
 		break;
 
 	case OPT_HUDLEVEL:
@@ -4016,7 +4049,7 @@ static void M_Options_DrawItem (int y, int item)
 			str = "Full";
 		r = (scr_viewsize.value - 100) / (130 - 100);
 		r = 1 - r;
-		M_DrawSlider (x, y, r, 0.f, str);
+		M_DrawSlider (x, y, r, str);
 		break;
 
 	case OPT_PIXELASPECT:
@@ -4043,22 +4076,22 @@ static void M_Options_DrawItem (int y, int item)
 
 	case OPT_GAMMA:
 		r = (1.0 - vid_gamma.value) / 0.5;
-		M_DrawSlider (x, y, r, 10.f * r, "%.0f");
+		M_DrawSlider (x, y, r, va ("%.0f", 10.f * r));
 		break;
 
 	case OPT_CONTRAST:
 		r = vid_contrast.value - 1.0;
-		M_DrawSlider (x, y, r, 10.f * r, "%.0f");
+		M_DrawSlider (x, y, r, va ("%.0f", 10.f * r));
 		break;
 	
 	case OPT_MOUSESPEED:
 		r = (sensitivity.value - 1)/10;
-		M_DrawSlider (x, y, r, sensitivity.value, "%.1f");
+		M_DrawSlider (x, y, r, va ("%.1f", sensitivity.value));
 		break;
 
 	case OPT_SBALPHA:
 		r = (1.0 - scr_sbaralpha.value) ; // scr_sbaralpha range is 1.0 to 0.0
-		M_DrawSlider (x, y, r, 100.0f * r, "%.0f%%");
+		M_DrawSlider (x, y, r, va ("%.0f%%", 100.0f * r));
 		break;
 
 	case OPT_HUDSTYLE:
@@ -4074,12 +4107,12 @@ static void M_Options_DrawItem (int y, int item)
 
 	case OPT_SNDVOL:
 		r = sfxvolume.value;
-		M_DrawSlider (x, y, r, 100.f * sfxvolume.value, "%.0f%%");
+		M_DrawSlider (x, y, r, va ("%.0f%%", 100.f * sfxvolume.value));
 		break;
 
 	case OPT_MUSICVOL:
 		r = bgmvolume.value;
-		M_DrawSlider (x, y, r, 100.f * bgmvolume.value, "%.0f%%");
+		M_DrawSlider (x, y, r, va ("%.0f%%", 100.f * bgmvolume.value));
 		break;
 
 	case OPT_MUSICEXT:
@@ -4118,12 +4151,12 @@ static void M_Options_DrawItem (int y, int item)
 
 	case OPT_FOV:
 		r = (scr_fov.value - FOV_MIN) / (FOV_MAX - FOV_MIN);
-		M_DrawSlider (x, y, r, scr_fov.value, "%.0f");
+		M_DrawSlider (x, y, r, va ("%.0f", scr_fov.value));
 		break;
 
 	case OPT_FOVDISTORT:
 		r = 1.f - cl_gun_fovscale.value;
-		M_DrawSlider (x, y, r, 100.f * r, "%.0f%%");
+		M_DrawSlider (x, y, r, va ("%.0f%%", 100.f * r));
 		break;
 
 	//
@@ -4204,11 +4237,11 @@ static void M_Options_DrawItem (int y, int item)
 		break;
 	case GPAD_OPT_SENSX:
 		r = (joy_sensitivity_yaw.value - MIN_JOY_SENS) / (MAX_JOY_SENS - MIN_JOY_SENS);
-		M_DrawSlider (x, y, r, joy_sensitivity_yaw.value, "%.0f");
+		M_DrawSlider (x, y, r, va ("%.0f", joy_sensitivity_yaw.value));
 		break;
 	case GPAD_OPT_SENSY:
 		r = (joy_sensitivity_pitch.value - MIN_JOY_SENS) / (MAX_JOY_SENS - MIN_JOY_SENS);
-		M_DrawSlider (x, y, r, joy_sensitivity_pitch.value, "%.0f");
+		M_DrawSlider (x, y, r, va ("%.0f", joy_sensitivity_pitch.value));
 		break;
 	case GPAD_OPT_INVERT:
 		M_DrawCheckbox (x, y, joy_invert.value);
@@ -4218,23 +4251,26 @@ static void M_Options_DrawItem (int y, int item)
 		break;
 	case GPAD_OPT_EXPONENT_LOOK:
 		r = (joy_exponent.value - MIN_JOY_EXPONENT) / (MAX_JOY_EXPONENT - MIN_JOY_EXPONENT);
-		M_DrawSlider (x, y, r, joy_exponent.value, "%.1f");
+		M_DrawSlider (x, y, r, va ("%.1f", joy_exponent.value));
 		break;
 	case GPAD_OPT_EXPONENT_MOVE:
 		r = (joy_exponent_move.value - MIN_JOY_EXPONENT) / (MAX_JOY_EXPONENT - MIN_JOY_EXPONENT);
-		M_DrawSlider (x, y, r, joy_exponent_move.value, "%.1f");
+		M_DrawSlider (x, y, r, va ("%.1f", joy_exponent_move.value));
 		break;
 	case GPAD_OPT_DEADZONE_LOOK:
 		r = (joy_deadzone_look.value - MIN_STICK_DEADZONE) / (MAX_STICK_DEADZONE - MIN_STICK_DEADZONE);
-		M_DrawSlider (x, y, r, r * 100.f, "%.0f%%");
+		l = (IN_GetRawLookMagnitude () - MIN_STICK_DEADZONE) / (MAX_STICK_DEADZONE - MIN_STICK_DEADZONE);
+		M_DrawThresholdSlider (x, y, r, selected && IN_HasGamepad (), l, va ("%.0f%%", r * 100.f));
 		break;
 	case GPAD_OPT_DEADZONE_MOVE:
 		r = (joy_deadzone_move.value - MIN_STICK_DEADZONE) / (MAX_STICK_DEADZONE - MIN_STICK_DEADZONE);
-		M_DrawSlider (x, y, r, r * 100.f, "%.0f%%");
+		l = (IN_GetRawMoveMagnitude () - MIN_STICK_DEADZONE) / (MAX_STICK_DEADZONE - MIN_STICK_DEADZONE);
+		M_DrawThresholdSlider (x, y, r, selected && IN_HasGamepad (), l, va ("%.0f%%", r * 100.f));
 		break;
 	case GPAD_OPT_DEADZONE_TRIG:
 		r = (joy_deadzone_trigger.value - MIN_TRIGGER_DEADZONE) / (MAX_TRIGGER_DEADZONE - MIN_TRIGGER_DEADZONE);
-		M_DrawSlider (x, y, r, r * 100.f, "%.0f%%");
+		l = (IN_GetRawTriggerMagnitude () - MIN_TRIGGER_DEADZONE) / (MAX_TRIGGER_DEADZONE - MIN_TRIGGER_DEADZONE);
+		M_DrawThresholdSlider (x, y, r, selected && IN_HasGamepad (), l, va ("%.0f%%", r * 100.f));
 		break;
 	case GPAD_OPT_GYROENABLE:
 		if (!IN_HasGyro ())
@@ -4256,15 +4292,16 @@ static void M_Options_DrawItem (int y, int item)
 		break;
 	case GPAD_OPT_GYROSENSX:
 		r = (gyro_yawsensitivity.value - MIN_GYRO_SENS) / (MAX_GYRO_SENS - MIN_GYRO_SENS);
-		M_DrawSlider (x, y, r, gyro_yawsensitivity.value, "%.1f");
+		M_DrawSlider (x, y, r, va ("%.1f", gyro_yawsensitivity.value));
 		break;
 	case GPAD_OPT_GYROSENSY:
 		r = (gyro_pitchsensitivity.value - MIN_GYRO_SENS) / (MAX_GYRO_SENS - MIN_GYRO_SENS);
-		M_DrawSlider (x, y, r, gyro_pitchsensitivity.value, "%.1f");
+		M_DrawSlider (x, y, r, va ("%.1f", gyro_pitchsensitivity.value));
 		break;
 	case GPAD_OPT_GYRONOISE:
 		r = (gyro_noise_thresh.value - MIN_GYRO_NOISE_THRESH) / (MAX_GYRO_NOISE_THRESH - MIN_GYRO_NOISE_THRESH);
-		M_DrawSlider (x, y, r, gyro_noise_thresh.value, "%.1f");
+		l = (IN_GetRawGyroMagnitude () - MIN_GYRO_NOISE_THRESH) / (MAX_GYRO_NOISE_THRESH - MIN_GYRO_NOISE_THRESH);
+		M_DrawThresholdSlider (x, y, r, selected && IN_HasGyro () && gyro_enable.value, l, va ("%.1f", gyro_noise_thresh.value));
 		break;
 
 	default:
