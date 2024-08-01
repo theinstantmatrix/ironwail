@@ -4260,17 +4260,17 @@ static void M_Options_DrawItem (int y, int item)
 	case GPAD_OPT_DEADZONE_LOOK:
 		r = (joy_deadzone_look.value - MIN_STICK_DEADZONE) / (MAX_STICK_DEADZONE - MIN_STICK_DEADZONE);
 		l = (IN_GetRawLookMagnitude () - MIN_STICK_DEADZONE) / (MAX_STICK_DEADZONE - MIN_STICK_DEADZONE);
-		M_DrawThresholdSlider (x, y, r, selected && IN_HasGamepad (), l, va ("%.0f%%", r * 100.f));
+		M_DrawThresholdSlider (x, y, r, selected && IN_HasGamepad (), l, va ("%.0f%%", joy_deadzone_look.value * 100.f));
 		break;
 	case GPAD_OPT_DEADZONE_MOVE:
 		r = (joy_deadzone_move.value - MIN_STICK_DEADZONE) / (MAX_STICK_DEADZONE - MIN_STICK_DEADZONE);
 		l = (IN_GetRawMoveMagnitude () - MIN_STICK_DEADZONE) / (MAX_STICK_DEADZONE - MIN_STICK_DEADZONE);
-		M_DrawThresholdSlider (x, y, r, selected && IN_HasGamepad (), l, va ("%.0f%%", r * 100.f));
+		M_DrawThresholdSlider (x, y, r, selected && IN_HasGamepad (), l, va ("%.0f%%", joy_deadzone_move.value * 100.f));
 		break;
 	case GPAD_OPT_DEADZONE_TRIG:
 		r = (joy_deadzone_trigger.value - MIN_TRIGGER_DEADZONE) / (MAX_TRIGGER_DEADZONE - MIN_TRIGGER_DEADZONE);
 		l = (IN_GetRawTriggerMagnitude () - MIN_TRIGGER_DEADZONE) / (MAX_TRIGGER_DEADZONE - MIN_TRIGGER_DEADZONE);
-		M_DrawThresholdSlider (x, y, r, selected && IN_HasGamepad (), l, va ("%.0f%%", r * 100.f));
+		M_DrawThresholdSlider (x, y, r, selected && IN_HasGamepad (), l, va ("%.0f%%", joy_deadzone_trigger.value * 100.f));
 		break;
 	case GPAD_OPT_GYROENABLE:
 		if (!IN_HasGyro ())
