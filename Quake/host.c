@@ -257,10 +257,18 @@ void	Host_FindMaxClients (void)
 
 void Host_Version_f (void)
 {
-	Con_Printf ("Quake Version %1.2f\n", VERSION);
-	Con_Printf ("QuakeSpasm Version " QUAKESPASM_VER_STRING "\n");
-	Con_Printf ("Ironwail Version " IRONWAIL_VER_STRING "\n");
-	Con_Printf ("Exe: " __TIME__ " " __DATE__ " (%s %d-bit)\n", SDL_GetPlatform (), (int)sizeof(void*)*8);
+	SDL_version sdl_linked;
+	SDL_GetVersion (&sdl_linked);
+
+	Con_Printf ("\n");
+	Con_Printf ("Quake      %1.2f\n", VERSION);
+	Con_Printf ("QuakeSpasm " QUAKESPASM_VER_STRING "\n");
+	Con_Printf ("Ironwail   " IRONWAIL_VER_STRING "\n");
+	Con_Printf ("Exe        " __TIME__ " " __DATE__ "\n");
+	Con_Printf ("SDL        " Q_SDL_COMPILED_VERSION_STRING " (compiled)\n");
+	Con_Printf ("           %d.%d.%d (linked)\n", sdl_linked.major, sdl_linked.minor, sdl_linked.patch);
+	Con_Printf ("OS         %s %d-bit\n", SDL_GetPlatform (), (int)sizeof(void*)*8);
+	Con_Printf ("\n");
 }
 
 /* cvar callback functions : */
