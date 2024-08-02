@@ -66,6 +66,7 @@ cvar_t	joy_exponent_move = { "joy_exponent_move", "2", CVAR_ARCHIVE };
 cvar_t	joy_swapmovelook = { "joy_swapmovelook", "0", CVAR_ARCHIVE };
 cvar_t	joy_flick = { "joy_flick", "0", CVAR_ARCHIVE };
 cvar_t	joy_flick_time = { "joy_flick_time", "0.125", CVAR_ARCHIVE };
+cvar_t	joy_flick_recenter = { "joy_flick_recenter", "0.0", CVAR_ARCHIVE };
 cvar_t	joy_flick_deadzone = { "joy_flick_deadzone", "0.9", CVAR_ARCHIVE };
 cvar_t	joy_flick_noise_thresh = { "joy_flick_noise_thresh", "2.0", CVAR_ARCHIVE };
 cvar_t	joy_device = { "joy_device", "0", CVAR_ARCHIVE };
@@ -114,7 +115,8 @@ static qboolean gyro_button_pressed = false;
 
 static struct
 {
-	float	amount;
+	float	yaw;
+	float	pitch;
 	float	prev_lerp_frac;
 	float	prev_angle;
 	float	prev_scale;
@@ -444,13 +446,13 @@ void IN_StartupJoystick (void)
 	
 	if (COM_CheckParm("-nojoy"))
 		return;
-	
+
 	if (SDL_InitSubSystem(SDL_INIT_GAMECONTROLLER) == -1 )
 	{
 		Con_Warning("could not initialize SDL Game Controller\n");
 		return;
 	}
-	
+
 	// Load additional SDL2 controller definitions from gamecontrollerdb.txt
 	for (i = 0; i < com_numbasedirs; i++)
 	{
@@ -589,6 +591,7 @@ void IN_Init (void)
 	Cvar_RegisterVariable(&joy_flick);
 	Cvar_SetCallback (&joy_flick, Joy_Flick_f);
 	Cvar_RegisterVariable(&joy_flick_time);
+	Cvar_RegisterVariable(&joy_flick_recenter);
 	Cvar_RegisterVariable(&joy_flick_deadzone);
 	Cvar_RegisterVariable(&joy_flick_noise_thresh);
 	Cvar_RegisterVariable(&joy_device);
@@ -971,7 +974,7 @@ void IN_JoyMove (usercmd_t *cmd)
 	// handle flick stick if enabled
 	if (joy_flick.value && gyro_present && gyro_enable.value)
 	{
-		float		angle, scale, lerp_frac;
+		float		angle, scale, lerp_frac, delta;
 		qboolean	isactive, wasactive;
 
 		// get current stick position in polar coordinates
@@ -986,19 +989,20 @@ void IN_JoyMove (usercmd_t *cmd)
 			if (!wasactive) // start new flick
 			{
 				flick.prev_lerp_frac = 0.f;
-				flick.amount = angle;
+				flick.yaw = angle;
+				flick.pitch = cl.viewangles[PITCH];
 			}
 		}
 		else if (isactive) // continuous adjustments
 		{
-			float delta = AngleDifference (angle, flick.prev_angle);
+			delta = AngleDifference (angle, flick.prev_angle);
 			if (joy_flick_noise_thresh.value > 0.f) // filter small movements
 			{
-				float scale = fabs (delta) / joy_flick_noise_thresh.value;
-				if (scale < 1.f)
+				float filter_scale = fabs (delta) / joy_flick_noise_thresh.value;
+				if (filter_scale < 1.f)
 				{
-					scale = LERP (0.05f, 1.f, scale * scale);
-					delta *= scale;
+					filter_scale = LERP (0.05f, 1.f, filter_scale * filter_scale);
+					delta *= filter_scale;
 					angle = NormalizeAngle (flick.prev_angle + delta);
 				}
 			}
@@ -1013,7 +1017,9 @@ void IN_JoyMove (usercmd_t *cmd)
 		}
 		else
 			lerp_frac = 1.f;
-		cl.viewangles[YAW] -= flick.amount * (IN_FlickStickEasing (lerp_frac) - IN_FlickStickEasing (flick.prev_lerp_frac));
+		delta = IN_FlickStickEasing (lerp_frac) - IN_FlickStickEasing (flick.prev_lerp_frac);
+		cl.viewangles[YAW] -= flick.yaw * delta;
+		cl.viewangles[PITCH] -= flick.pitch * delta * CLAMP (0.f, joy_flick_recenter.value, 1.f);
 
 		// update state
 		flick.prev_scale = scale;

@@ -68,6 +68,7 @@ extern cvar_t joy_exponent;
 extern cvar_t joy_exponent_move;
 extern cvar_t joy_swapmovelook;
 extern cvar_t joy_flick;
+extern cvar_t joy_flick_recenter;
 extern cvar_t gyro_enable;
 extern cvar_t gyro_mode;
 extern cvar_t gyro_turning_axis;
@@ -3279,6 +3280,7 @@ void M_Menu_Gamepad_f (void)
 													\
 	def(GPAD_OPT_GYROENABLE,	"Gyro")				\
 	def(GPAD_OPT_FLICKSTICK,	"Flick Stick")		\
+	def(GPAD_OPT_FLICKRECENTER,	"Flick Recenter")	\
 	def(GPAD_OPT_GYROMODE,		"Gyro Button")		\
 	def(GPAD_OPT_GYROAXIS,		"Gyro Axis")		\
 	def(GPAD_OPT_GYROSENSX,		"Gyro Yaw Speed")	\
@@ -3411,6 +3413,8 @@ static qboolean M_Options_IsEnabled (int index)
 		if (!IN_HasGyro ())
 			return false;
 		if (!gyro_enable.value && index > GYRO_OPTIONS_FIRST)
+			return false;
+		if (index == GPAD_OPT_FLICKRECENTER && !joy_flick.value)
 			return false;
 	}
 	return true;
@@ -3780,6 +3784,9 @@ void M_AdjustSliders (int dir)
 	case GPAD_OPT_FLICKSTICK:
 		Cvar_SetValueQuick (&joy_flick, !joy_flick.value);
 		break;
+	case GPAD_OPT_FLICKRECENTER:
+		Cvar_SetValueQuick (&joy_flick_recenter, CLAMP (0.f, joy_flick_recenter.value + dir * .1f, 1.f));
+		break;
 	case GPAD_OPT_GYROMODE:
 		Cvar_SetValueQuick (&gyro_mode, (int)(q_max (gyro_mode.value, 0.f) + GYRO_MODE_COUNT + dir) % GYRO_MODE_COUNT);
 		break;
@@ -3951,6 +3958,9 @@ qboolean M_SetSliderValue (int option, float f)
 	case GPAD_OPT_DEADZONE_TRIG:
 		f = LERP (MIN_TRIGGER_DEADZONE, MAX_TRIGGER_DEADZONE, f);
 		Cvar_SetValueQuick (&joy_deadzone_trigger, f);
+		return true;
+	case GPAD_OPT_FLICKRECENTER:
+		Cvar_SetValueQuick (&joy_flick_recenter, f);
 		return true;
 	case GPAD_OPT_GYROSENSX:
 		f = LERP (MIN_GYRO_SENS, MAX_GYRO_SENS, f);
@@ -4283,6 +4293,10 @@ static void M_Options_DrawItem (int y, int item)
 		break;
 	case GPAD_OPT_FLICKSTICK:
 		M_DrawCheckbox (x, y, joy_flick.value);
+		break;
+	case GPAD_OPT_FLICKRECENTER:
+		r = joy_flick_recenter.value;
+		M_DrawSlider (x, y, r, va ("%.0f%%", joy_flick_recenter.value * 100.f));
 		break;
 	case GPAD_OPT_GYROMODE:
 		switch ((int)gyro_mode.value)
