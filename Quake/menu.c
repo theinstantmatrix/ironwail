@@ -67,6 +67,7 @@ extern cvar_t joy_invert;
 extern cvar_t joy_exponent;
 extern cvar_t joy_exponent_move;
 extern cvar_t joy_swapmovelook;
+extern cvar_t joy_flick;
 extern cvar_t gyro_enable;
 extern cvar_t gyro_mode;
 extern cvar_t gyro_turning_axis;
@@ -3277,6 +3278,7 @@ void M_Menu_Gamepad_f (void)
 	def(GPAD_OPT_SPACE5,		"")					\
 													\
 	def(GPAD_OPT_GYROENABLE,	"Gyro")				\
+	def(GPAD_OPT_FLICKSTICK,	"Flick Stick")		\
 	def(GPAD_OPT_GYROMODE,		"Gyro Button")		\
 	def(GPAD_OPT_GYROAXIS,		"Gyro Axis")		\
 	def(GPAD_OPT_GYROSENSX,		"Gyro Yaw Speed")	\
@@ -3774,6 +3776,9 @@ void M_AdjustSliders (int dir)
 		break;
 	case GPAD_OPT_GYROENABLE:
 		Cvar_SetValueQuick (&gyro_enable, !gyro_enable.value);
+		break;
+	case GPAD_OPT_FLICKSTICK:
+		Cvar_SetValueQuick (&joy_flick, !joy_flick.value);
 		break;
 	case GPAD_OPT_GYROMODE:
 		Cvar_SetValueQuick (&gyro_mode, (int)(q_max (gyro_mode.value, 0.f) + GYRO_MODE_COUNT + dir) % GYRO_MODE_COUNT);
@@ -4275,6 +4280,9 @@ static void M_Options_DrawItem (int y, int item)
 			M_Print (x, y, "Unavailable");
 		else
 			M_DrawCheckbox (x, y, gyro_enable.value);
+		break;
+	case GPAD_OPT_FLICKSTICK:
+		M_DrawCheckbox (x, y, joy_flick.value);
 		break;
 	case GPAD_OPT_GYROMODE:
 		switch ((int)gyro_mode.value)

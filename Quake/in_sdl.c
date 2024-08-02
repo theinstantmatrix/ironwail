@@ -64,6 +64,10 @@ cvar_t	joy_invert = { "joy_invert", "0", CVAR_ARCHIVE };
 cvar_t	joy_exponent = { "joy_exponent", "2", CVAR_ARCHIVE };
 cvar_t	joy_exponent_move = { "joy_exponent_move", "2", CVAR_ARCHIVE };
 cvar_t	joy_swapmovelook = { "joy_swapmovelook", "0", CVAR_ARCHIVE };
+cvar_t	joy_flick = { "joy_flick", "0", CVAR_ARCHIVE };
+cvar_t	joy_flick_time = { "joy_flick_time", "0.125", CVAR_ARCHIVE };
+cvar_t	joy_flick_deadzone = { "joy_flick_deadzone", "0.9", CVAR_ARCHIVE };
+cvar_t	joy_flick_noise_thresh = { "joy_flick_noise_thresh", "2.0", CVAR_ARCHIVE };
 cvar_t	joy_device = { "joy_device", "0", CVAR_ARCHIVE };
 
 cvar_t gyro_enable = {"gyro_enable", "1", CVAR_ARCHIVE};
@@ -107,6 +111,19 @@ static unsigned int updates_countdown = 0;
 
 static qboolean gyro_present = false;
 static qboolean gyro_button_pressed = false;
+
+static struct
+{
+	float	amount;
+	float	prev_lerp_frac;
+	float	prev_angle;
+	float	prev_scale;
+} flick;
+
+static void IN_ResetFlickState (void)
+{
+	memset (&flick, 0, sizeof (flick));
+}
 
 static int SDLCALL IN_FilterMouseEvents (const SDL_Event *event)
 {
@@ -309,6 +326,7 @@ static qboolean IN_UseController (int device_index)
 		Cvar_SetValueQuick (&joy_device, -1);
 		gyro_present = false;
 		gyro_yaw = gyro_pitch = gyro_raw_mag = 0.f;
+		IN_ResetFlickState ();
 	}
 
 	if (device_index == -1)
@@ -525,6 +543,18 @@ static void Joy_Device_Completion_f (cvar_t *cvar, const char *partial)
 			Con_AddToTabList (va ("%d", i), partial, SDL_GameControllerNameForIndex (i));
 }
 
+/*
+================
+Joy_Flick_f
+
+Called when joy_flick changes
+================
+*/
+static void Joy_Flick_f (cvar_t *cvar)
+{
+	IN_ResetFlickState ();
+}
+
 void IN_Init (void)
 {
 	textmode = Key_TextEntry();
@@ -556,6 +586,11 @@ void IN_Init (void)
 	Cvar_RegisterVariable(&joy_exponent);
 	Cvar_RegisterVariable(&joy_exponent_move);
 	Cvar_RegisterVariable(&joy_swapmovelook);
+	Cvar_RegisterVariable(&joy_flick);
+	Cvar_SetCallback (&joy_flick, Joy_Flick_f);
+	Cvar_RegisterVariable(&joy_flick_time);
+	Cvar_RegisterVariable(&joy_flick_deadzone);
+	Cvar_RegisterVariable(&joy_flick_noise_thresh);
 	Cvar_RegisterVariable(&joy_device);
 	Cvar_SetCallback(&joy_device, Joy_Device_f);
 	Cvar_SetCompletion(&joy_device, Joy_Device_Completion_f);
@@ -871,6 +906,18 @@ void IN_Commands (void)
 
 /*
 ================
+IN_FlickStickEasing
+================
+*/
+static float IN_FlickStickEasing (float frac)
+{
+	frac = 1.f - frac;
+	frac = 1.f - frac * frac;
+	return frac;
+}
+
+/*
+================
 IN_JoyMove
 ================
 */
@@ -886,7 +933,7 @@ void IN_JoyMove (usercmd_t *cmd)
 	
 	if (cl.paused || key_dest != key_game)
 		return;
-	
+
 	moveRaw.x = joy_axisstate.axisvalue[SDL_CONTROLLER_AXIS_LEFTX];
 	moveRaw.y = joy_axisstate.axisvalue[SDL_CONTROLLER_AXIS_LEFTY];
 	lookRaw.x = joy_axisstate.axisvalue[SDL_CONTROLLER_AXIS_RIGHTX];
@@ -898,7 +945,7 @@ void IN_JoyMove (usercmd_t *cmd)
 		moveRaw = lookRaw;
 		lookRaw = temp;
 	}
-	
+
 	moveDeadzone = IN_ApplyDeadzone(moveRaw, joy_deadzone_move.value, joy_outer_threshold_move.value);
 	lookDeadzone = IN_ApplyDeadzone(lookRaw, joy_deadzone_look.value, joy_outer_threshold_look.value);
 
@@ -921,11 +968,68 @@ void IN_JoyMove (usercmd_t *cmd)
 	if (CL_InCutscene ())
 		return;
 
-	cl.viewangles[YAW] -= lookEased.x * joy_sensitivity_yaw.value * host_frametime;
-	cl.viewangles[PITCH] += lookEased.y * joy_sensitivity_pitch.value * (joy_invert.value ? -1.0 : 1.0) * host_frametime;
+	// handle flick stick if enabled
+	if (joy_flick.value && gyro_present && gyro_enable.value)
+	{
+		float		angle, scale, lerp_frac;
+		qboolean	isactive, wasactive;
 
-	if (lookEased.x != 0 || lookEased.y != 0)
-		V_StopPitchDrift();
+		// get current stick position in polar coordinates
+		angle = NormalizeAngle (RAD2DEG (atan2 (lookRaw.y, lookRaw.x)) + 90.f);
+		scale = IN_AxisMagnitude (lookRaw);
+
+		// handle state transitions
+		isactive = scale > joy_flick_deadzone.value;
+		wasactive = flick.prev_scale > joy_flick_deadzone.value;
+		if (isactive != wasactive)
+		{
+			if (!wasactive) // start new flick
+			{
+				flick.prev_lerp_frac = 0.f;
+				flick.amount = angle;
+			}
+		}
+		else if (isactive) // continuous adjustments
+		{
+			float delta = AngleDifference (angle, flick.prev_angle);
+			if (joy_flick_noise_thresh.value > 0.f) // filter small movements
+			{
+				float scale = fabs (delta) / joy_flick_noise_thresh.value;
+				if (scale < 1.f)
+				{
+					scale = LERP (0.05f, 1.f, scale * scale);
+					delta *= scale;
+					angle = NormalizeAngle (flick.prev_angle + delta);
+				}
+			}
+			cl.viewangles[YAW] -= delta;
+		}
+
+		// advance angle animation
+		if (joy_flick_time.value > 0.f)
+		{
+			lerp_frac = flick.prev_lerp_frac + host_frametime / joy_flick_time.value;
+			lerp_frac = CLAMP (0.f, lerp_frac, 1.f);
+		}
+		else
+			lerp_frac = 1.f;
+		cl.viewangles[YAW] -= flick.amount * (IN_FlickStickEasing (lerp_frac) - IN_FlickStickEasing (flick.prev_lerp_frac));
+
+		// update state
+		flick.prev_scale = scale;
+		flick.prev_angle = angle;
+		flick.prev_lerp_frac = lerp_frac;
+	}
+	else // traditional joystick look
+	{
+		IN_ResetFlickState ();
+
+		cl.viewangles[YAW] -= lookEased.x * joy_sensitivity_yaw.value * host_frametime;
+		cl.viewangles[PITCH] += lookEased.y * joy_sensitivity_pitch.value * (joy_invert.value ? -1.0 : 1.0) * host_frametime;
+
+		if (lookEased.x != 0 || lookEased.y != 0)
+			V_StopPitchDrift();
+	}
 
 	/* johnfitz -- variable pitch clamping */
 	if (cl.viewangles[PITCH] > cl_maxpitch.value)
