@@ -3590,7 +3590,7 @@ void M_AdjustSliders (int dir)
 		Cvar_SetValue ("scr_sbaralpha", f);
 		break;
 	case OPT_MUSICVOL:	// music volume
-		f = bgmvolume.value + dir * 0.1;
+		f = bgmvolume.value + dir * 0.05f;
 		if (f < 0)	f = 0;
 		else if (f > 1)	f = 1;
 		Cvar_SetValue ("bgmvolume", f);
@@ -3599,7 +3599,7 @@ void M_AdjustSliders (int dir)
 		Cvar_Set ("bgm_extmusic", bgm_extmusic.value ? "0" : "1");
 		break;
 	case OPT_SNDVOL:	// sfx volume
-		f = sfxvolume.value + dir * 0.1;
+		f = sfxvolume.value + dir * 0.05f;
 		if (f < 0)	f = 0;
 		else if (f > 1)	f = 1;
 		Cvar_SetValue ("volume", f);
