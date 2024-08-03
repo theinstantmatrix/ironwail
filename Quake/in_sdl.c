@@ -629,6 +629,10 @@ extern cvar_t cl_maxpitch; /* johnfitz -- variable pitch clamping */
 extern cvar_t cl_minpitch; /* johnfitz -- variable pitch clamping */
 extern cvar_t scr_fov;
 
+static float IN_FovScale (void)
+{
+	return tan (DEG2RAD (r_refdef.basefov) * 0.5f) / tan (DEG2RAD (scr_fov.value) * 0.5f);
+}
 
 void IN_MouseMotion(int dx, int dy)
 {
@@ -1059,7 +1063,7 @@ void IN_GyroMove(usercmd_t *cmd)
 	if (CL_InCutscene ())
 		return;
 
-	scale = (180.f / M_PI) * host_frametime;
+	scale = (180.f / M_PI) * host_frametime * IN_FovScale ();
 	switch ((int)gyro_mode.value)
 	{
 	case GYRO_BUTTON_DISABLES:
@@ -1097,8 +1101,7 @@ void IN_MouseMove(usercmd_t *cmd)
 	float		sens;
 	qboolean	mlook = (in_mlook.state & 1) || freelook.value;
 
-	sens = tan(DEG2RAD (r_refdef.basefov) * 0.5f) / tan (DEG2RAD (scr_fov.value) * 0.5f);
-	sens *= sensitivity.value;
+	sens = sensitivity.value * IN_FovScale ();
 
 	dmx = total_dx * sens;
 	dmy = total_dy * sens;
