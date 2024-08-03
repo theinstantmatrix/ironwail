@@ -1016,7 +1016,7 @@ void IN_JoyMove (usercmd_t *cmd)
 		// advance angle animation
 		if (joy_flick_time.value > 0.f)
 		{
-			lerp_frac = flick.prev_lerp_frac + host_frametime / joy_flick_time.value;
+			lerp_frac = flick.prev_lerp_frac + host_rawframetime / joy_flick_time.value;
 			lerp_frac = CLAMP (0.f, lerp_frac, 1.f);
 		}
 		else
@@ -1034,8 +1034,8 @@ void IN_JoyMove (usercmd_t *cmd)
 	{
 		IN_ResetFlickState ();
 
-		cl.viewangles[YAW] -= lookEased.x * joy_sensitivity_yaw.value * host_frametime;
-		cl.viewangles[PITCH] += lookEased.y * joy_sensitivity_pitch.value * (joy_invert.value ? -1.0 : 1.0) * host_frametime;
+		cl.viewangles[YAW] -= lookEased.x * joy_sensitivity_yaw.value * host_rawframetime;
+		cl.viewangles[PITCH] += lookEased.y * joy_sensitivity_pitch.value * (joy_invert.value ? -1.0 : 1.0) * host_rawframetime;
 
 		if (lookEased.x != 0 || lookEased.y != 0)
 			V_StopPitchDrift();
@@ -1063,7 +1063,7 @@ void IN_GyroMove(usercmd_t *cmd)
 	if (CL_InCutscene ())
 		return;
 
-	scale = (180.f / M_PI) * host_frametime * IN_FovScale ();
+	scale = (180.f / M_PI) * host_rawframetime * IN_FovScale ();
 	switch ((int)gyro_mode.value)
 	{
 	case GYRO_BUTTON_DISABLES:
