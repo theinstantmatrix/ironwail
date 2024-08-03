@@ -104,6 +104,7 @@ static const int buttonremap[] =
 /* total accumulated mouse movement since last frame */
 static int		total_dx = 0, total_dy = 0;
 static float	gyro_yaw = 0.f, gyro_pitch = 0.f, gyro_raw_mag = 0.f;
+static float	gyro_center_frac = 0.f, gyro_center_amount = 0.f;
 
 // used for gyro calibration
 static float gyro_accum[3] = {0.f, 0.f, 0.f};
@@ -625,6 +626,7 @@ void IN_Shutdown (void)
 	IN_ShutdownJoystick();
 }
 
+extern cvar_t v_centerspeed;
 extern cvar_t cl_maxpitch; /* johnfitz -- variable pitch clamping */
 extern cvar_t cl_minpitch; /* johnfitz -- variable pitch clamping */
 extern cvar_t scr_fov;
@@ -1048,9 +1050,14 @@ void IN_JoyMove (usercmd_t *cmd)
 		cl.viewangles[PITCH] = cl_minpitch.value;
 }
 
+static float IN_RecenterEasing (float frac)
+{
+	return frac * frac;
+}
+
 void IN_GyroMove(usercmd_t *cmd)
 {
-	float scale;
+	float scale, duration, lerp_frac;
 	if (!gyro_enable.value)
 		return;
 
@@ -1082,11 +1089,39 @@ void IN_GyroMove(usercmd_t *cmd)
 		break;
 	}
 
-	if (gyro_yaw || gyro_pitch)
-		V_StopPitchDrift ();
-
+	// apply gyro
 	cl.viewangles[YAW] += scale * gyro_yaw * gyro_yawsensitivity.value;
 	cl.viewangles[PITCH] -= scale * gyro_pitch * gyro_pitchsensitivity.value;
+
+	// Default pitch drift code tries to move towards the ideal pitch
+	// every frame, which means it is always fighting the player's input.
+	// When gyro is active we disable the default behavior, and instead
+	// we perform "additive" camera centering by storing the delta
+	// between the ideal pitch and the current pitch when centerview is used,
+	// and injecting that delta over some amount of time.
+
+	// stop standard pitch drifting
+	V_StopPitchDrift ();
+
+	// store angle delta and reset centering anim if centerview was used this frame
+	if (cl.lastcenterstart == cl.time)
+	{
+		gyro_center_frac = 0.f;
+		gyro_center_amount = cl.idealpitch - cl.viewangles[PITCH];
+	}
+
+	// try to roughly mimic the look of the default pitch drift code
+	if (gyro_center_amount != 0.f && v_centerspeed.value > 0.f)
+	{
+		duration = fabs (gyro_center_amount / v_centerspeed.value);
+		lerp_frac = gyro_center_frac + host_rawframetime / duration;
+		lerp_frac = CLAMP (0.f, lerp_frac, 1.f);
+	}
+	else
+		lerp_frac = 1.f;
+	scale = IN_RecenterEasing (lerp_frac) - IN_RecenterEasing (gyro_center_frac);
+	gyro_center_frac = lerp_frac;
+	cl.viewangles[PITCH] += gyro_center_amount * scale;
 
 	/* johnfitz -- variable pitch clamping */
 	if (cl.viewangles[PITCH] > cl_maxpitch.value)
