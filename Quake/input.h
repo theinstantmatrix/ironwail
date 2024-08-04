@@ -64,11 +64,11 @@ typedef enum gamepadtype_t
 	GAMEPAD_NINTENDO,
 } gamepadtype_t;
 
+qboolean IN_HasRumble (void);
 qboolean IN_HasGamepad (void);
 const char *IN_GetGamepadName (void);
 gamepadtype_t IN_GetGamepadType (void);
 void IN_UseNextGamepad (int dir, qboolean allow_disable);
-const char *IN_GamepadButtonName (int keynum);
 
 void IN_SendKeyEvents (void);
 // used as a callback for Sys_SendKeyEvents() by some drivers

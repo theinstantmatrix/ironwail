@@ -378,6 +378,17 @@ int Q_nextPow2(int val)
 	return val;
 }
 
+float GetFraction (float val, float minval, float maxval)
+{
+	return (val - minval) / (maxval - minval);
+}
+
+float GetClampedFraction (float val, float minval, float maxval)
+{
+	val = GetFraction (val, minval, maxval);
+	return CLAMP (0.f, val, 1.f);
+}
+
 /*
 ==================
 Interleave0

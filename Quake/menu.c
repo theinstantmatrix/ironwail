@@ -68,6 +68,7 @@ extern cvar_t joy_exponent;
 extern cvar_t joy_exponent_move;
 extern cvar_t joy_swapmovelook;
 extern cvar_t joy_flick;
+extern cvar_t joy_rumble;
 extern cvar_t gyro_enable;
 extern cvar_t gyro_mode;
 extern cvar_t gyro_turning_axis;
@@ -3277,6 +3278,10 @@ void M_Menu_Gamepad_f (void)
 													\
 	def(GPAD_OPT_SPACE5,		"")					\
 													\
+	def(GPAD_OPT_RUMBLE,		"Vibration")		\
+													\
+	def(GPAD_OPT_SPACE6,		"")					\
+													\
 	def(GPAD_OPT_GYROENABLE,	"Gyro")				\
 	def(GPAD_OPT_FLICKSTICK,	"Flick Stick")		\
 	def(GPAD_OPT_GYROMODE,		"Gyro Button")		\
@@ -3405,6 +3410,8 @@ static qboolean M_Options_IsEnabled (int index)
 	if ((unsigned int) index >= countof (options_names))
 		return false;
 	if (index > GPAD_OPTIONS_FIRST && index < GPAD_OPTIONS_FIRST + GPAD_OPTIONS_ITEMS && !IN_HasGamepad ())
+		return false;
+	if (index == GPAD_OPT_RUMBLE && !IN_HasRumble ())
 		return false;
 	if (M_Options_IsGyroId (index))
 	{
@@ -3774,6 +3781,9 @@ void M_AdjustSliders (int dir)
 	case GPAD_OPT_DEADZONE_TRIG:
 		Cvar_SetValueQuick (&joy_deadzone_trigger, CLAMP (MIN_TRIGGER_DEADZONE, joy_deadzone_trigger.value + dir * 0.05f, MAX_TRIGGER_DEADZONE));
 		break;
+	case GPAD_OPT_RUMBLE:
+		Cvar_SetValueQuick (&joy_rumble, CLAMP (0.f, joy_rumble.value + dir * 0.1f, 1.f));
+		break;
 	case GPAD_OPT_GYROENABLE:
 		Cvar_SetValueQuick (&gyro_enable, !gyro_enable.value);
 		break;
@@ -3951,6 +3961,9 @@ qboolean M_SetSliderValue (int option, float f)
 	case GPAD_OPT_DEADZONE_TRIG:
 		f = LERP (MIN_TRIGGER_DEADZONE, MAX_TRIGGER_DEADZONE, f);
 		Cvar_SetValueQuick (&joy_deadzone_trigger, f);
+		return true;
+	case GPAD_OPT_RUMBLE:
+		Cvar_SetValueQuick (&joy_rumble, f);
 		return true;
 	case GPAD_OPT_GYROSENSX:
 		f = LERP (MIN_GYRO_SENS, MAX_GYRO_SENS, f);
@@ -4274,6 +4287,13 @@ static void M_Options_DrawItem (int y, int item)
 		r = (joy_deadzone_trigger.value - MIN_TRIGGER_DEADZONE) / (MAX_TRIGGER_DEADZONE - MIN_TRIGGER_DEADZONE);
 		l = (IN_GetRawTriggerMagnitude () - MIN_TRIGGER_DEADZONE) / (MAX_TRIGGER_DEADZONE - MIN_TRIGGER_DEADZONE);
 		M_DrawThresholdSlider (x, y, r, selected && IN_HasGamepad (), l, va ("%.0f%%", joy_deadzone_trigger.value * 100.f));
+		break;
+	case GPAD_OPT_RUMBLE:
+		r = joy_rumble.value;
+		if (!IN_HasRumble ())
+			M_Print (x, y, "Unavailable");
+		else
+			M_DrawSlider (x, y, r, va ("%.0f%%", joy_rumble.value * 100.f));
 		break;
 	case GPAD_OPT_GYROENABLE:
 		if (!IN_HasGyro ())

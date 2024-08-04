@@ -97,6 +97,9 @@ void VectorScale (vec3_t in, vec_t scale, vec3_t out);
 int Q_log2(int val);
 int Q_nextPow2(int val);
 
+float GetFraction (float val, float minval, float maxval);
+float GetClampedFraction (float val, float minval, float maxval);
+
 uint32_t Interleave0 (uint16_t x);
 uint32_t Interleave (uint16_t even, uint16_t odd);
 uint16_t DeinterleaveEven (uint32_t x);

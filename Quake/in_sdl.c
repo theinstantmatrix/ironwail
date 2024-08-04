@@ -69,6 +69,7 @@ cvar_t	joy_flick_time = { "joy_flick_time", "0.125", CVAR_ARCHIVE };
 cvar_t	joy_flick_recenter = { "joy_flick_recenter", "0.0", CVAR_ARCHIVE };
 cvar_t	joy_flick_deadzone = { "joy_flick_deadzone", "0.9", CVAR_ARCHIVE };
 cvar_t	joy_flick_noise_thresh = { "joy_flick_noise_thresh", "2.0", CVAR_ARCHIVE };
+cvar_t	joy_rumble = { "joy_rumble", "0.3", CVAR_ARCHIVE };
 cvar_t	joy_device = { "joy_device", "0", CVAR_ARCHIVE };
 
 cvar_t gyro_enable = {"gyro_enable", "1", CVAR_ARCHIVE};
@@ -89,6 +90,7 @@ static int					joy_active_device = -1;
 static SDL_GameController	*joy_active_controller = NULL;
 static gamepadtype_t		joy_active_type = GAMEPAD_NONE;
 static char					joy_active_name[256];
+static qboolean				joy_has_rumble = false;
 
 static qboolean	no_mouse = false;
 
@@ -314,6 +316,10 @@ static qboolean IN_UseController (int device_index)
 
 	if (joy_active_device != -1)
 	{
+#if SDL_VERSION_ATLEAST (2, 0, 9)
+		if (joy_has_rumble)
+			SDL_GameControllerRumble (joy_active_controller, 0, 0, 100);
+#endif // SDL_VERSION_ATLEAST (2, 0, 9)
 		SDL_GameControllerClose (joy_active_controller);
 
 		// Only show "gamepad removed" message when disabling the gamepad altogether,
@@ -329,6 +335,7 @@ static qboolean IN_UseController (int device_index)
 		Cvar_SetValueQuick (&joy_device, -1);
 		gyro_present = false;
 		gyro_yaw = gyro_pitch = gyro_raw_mag = 0.f;
+		joy_has_rumble = false;
 		IN_ResetFlickState ();
 	}
 
@@ -409,6 +416,9 @@ static qboolean IN_UseController (int device_index)
 	}
 #endif // SDL_VERSION_ATLEAST(2, 0, 14)
 
+#if SDL_VERSION_ATLEAST (2, 0, 9)
+	joy_has_rumble = SDL_GameControllerHasRumble (joy_active_controller);
+#endif // SDL_VERSION_ATLEAST (2, 0, 9)
 	return true;
 }
 
@@ -507,6 +517,11 @@ void IN_UseNextGamepad (int dir, qboolean allow_disable)
 	}
 }
 
+qboolean IN_HasRumble (void)
+{
+	return joy_has_rumble;
+}
+
 void IN_GyroActionDown (void)
 {
 	gyro_button_pressed = true;
@@ -595,6 +610,7 @@ void IN_Init (void)
 	Cvar_RegisterVariable(&joy_flick_recenter);
 	Cvar_RegisterVariable(&joy_flick_deadzone);
 	Cvar_RegisterVariable(&joy_flick_noise_thresh);
+	Cvar_RegisterVariable(&joy_rumble);
 	Cvar_RegisterVariable(&joy_device);
 	Cvar_SetCallback(&joy_device, Joy_Device_f);
 	Cvar_SetCompletion(&joy_device, Joy_Device_Completion_f);
@@ -911,6 +927,17 @@ void IN_Commands (void)
 	IN_JoyKeyEvent(joy_axisstate.axisvalue[SDL_CONTROLLER_AXIS_TRIGGERRIGHT] > triggerthreshold, newaxisstate.axisvalue[SDL_CONTROLLER_AXIS_TRIGGERRIGHT] > triggerthreshold, K_RTRIGGER, &joy_emulatedkeytimer[5]);
 	
 	joy_axisstate = newaxisstate;
+
+#if SDL_VERSION_ATLEAST (2, 0, 9)
+	if (joy_has_rumble && joy_rumble.value > 0.f)
+	{
+		float strength = CLAMP (0.f, joy_rumble.value, 1.f) * 0xffff;
+		float lofreq = GetClampedFraction (S_GetLoFreqLevel (), 0.067f, 0.45f);
+		float hifreq = GetClampedFraction (S_GetHiFreqLevel (), 0.061f, 0.45f);
+		hifreq *= hifreq;
+		SDL_GameControllerRumble (joy_active_controller, lofreq * strength, hifreq * strength, 100);
+	}
+#endif // SDL_VERSION_ATLEAST (2, 0, 9)
 }
 
 /*
