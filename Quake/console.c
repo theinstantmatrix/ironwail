@@ -1598,7 +1598,7 @@ void Con_AddToTabList (const char *name, const char *partial, const char *type)
 	tab_t	*t,*insert;
 	char	*i_bash, *i_bash2;
 	const char *i_name, *i_name2;
-	int		len, mark;
+	int		namelen, typelen, mark;
 
 	if (!Con_Match (name, partial))
 		return;
@@ -1638,11 +1638,16 @@ void Con_AddToTabList (const char *name, const char *partial, const char *type)
 	}
 
 	mark = Hunk_LowMark ();
-	len = strlen (name);
-	t = (tab_t *) Hunk_AllocName (sizeof (tab_t) + len + 1, "tablist");
-	memcpy (t + 1, name, len + 1);
+	namelen = (int) strlen (name) + 1;
+	typelen = type ? (int) strlen (type) + 1 : 0;
+	t = (tab_t *) Hunk_AllocName (sizeof (tab_t) + namelen + typelen, "tablist");
 	t->name = (const char *) (t + 1);
-	t->type = type;
+	memcpy ((char *) t->name, name, namelen);
+	if (type)
+	{
+		t->type = t->name + namelen;
+		memcpy ((char *) t->type, type, typelen);
+	}
 	t->count = 1;
 
 	if (!tablist) //create list
