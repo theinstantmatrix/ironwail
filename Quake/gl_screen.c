@@ -1042,7 +1042,7 @@ SCR_DrawCrosshair -- johnfitz
 */
 void SCR_DrawCrosshair (void)
 {
-	if (!crosshair.value || scr_viewsize.value >= 130)
+	if (cl.intermission || CL_InCutscene () || !crosshair.value || scr_viewsize.value >= 130)
 		return;
 
 	GL_SetCanvas (CANVAS_CROSSHAIR);
