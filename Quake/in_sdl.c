@@ -1395,10 +1395,15 @@ void IN_StartGyroCalibration (void)
 	updates_countdown = 300;
 }
 
-static void IN_UpdateGyroCalibration (void)
+static qboolean IN_UpdateGyroCalibration (const float newsample[3])
 {
 	if (!updates_countdown)
-		return;
+		return false;
+
+	gyro_accum[0] += newsample[0];
+	gyro_accum[1] += newsample[1];
+	gyro_accum[2] += newsample[2];
+	num_samples++;
 
 	updates_countdown--;
 	if (!updates_countdown)
@@ -1414,7 +1419,11 @@ static void IN_UpdateGyroCalibration (void)
 			gyro_calibration_z.value);
 
 		Con_Printf("Calibration finished\n");
+
+		return false;
 	}
+
+	return true;
 }
 
 qboolean IN_HasGyro (void)
@@ -1588,14 +1597,8 @@ void IN_SendKeyEvents (void)
 				float prev_yaw = gyro_yaw;
 				float prev_pitch = gyro_pitch;
 
-				if (updates_countdown)
-				{
-					gyro_accum[0] += event.csensor.data[0];
-					gyro_accum[1] += event.csensor.data[1];
-					gyro_accum[2] += event.csensor.data[2];
-					num_samples++;
+				if (IN_UpdateGyroCalibration (event.csensor.data))
 					break;
-				}
 
 				if (!gyro_turning_axis.value)
 					gyro_yaw = event.csensor.data[1] - gyro_calibration_y.value; // yaw
@@ -1638,7 +1641,5 @@ void IN_SendKeyEvents (void)
 			break;
 		}
 	}
-
-	IN_UpdateGyroCalibration ();
 }
 
