@@ -3102,6 +3102,8 @@ void M_Menu_Calibration_f (void)
 
 void M_Calibration_Draw (void)
 {
+	char anim[16];
+	int i, progress;
 	int y = 72;
 
 	switch (calibration_state)
@@ -3117,7 +3119,12 @@ void M_Calibration_Draw (void)
 		break;
 
 	case CALIBRATION_IN_ROGRESS:
+		progress = IN_GetGyroCalibrationProgress () * (Q_COUNTOF (anim) - 1);
+		for (i = 0; i < (int) Q_COUNTOF (anim) - 1; i++)
+			anim[i] = i < progress ? '.'|0x80 : '.';
+		anim[i] = '\0';
 		M_PrintAligned (160, y, ALIGN_CENTER, "Calibrating, please wait...");
+		M_PrintAligned (160, y + 16, ALIGN_CENTER, anim);
 		if (!IN_IsCalibratingGyro ())
 			calibration_state = CALIBRATION_FINISHED;
 		break;

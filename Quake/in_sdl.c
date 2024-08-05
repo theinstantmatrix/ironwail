@@ -109,8 +109,8 @@ static float	gyro_yaw = 0.f, gyro_pitch = 0.f, gyro_raw_mag = 0.f;
 static float	gyro_center_frac = 0.f, gyro_center_amount = 0.f;
 
 // used for gyro calibration
+#define GYRO_CALIBRATION_SAMPLES	300
 static float gyro_accum[3] = {0.f, 0.f, 0.f};
-static unsigned int num_samples = 0;
 static unsigned int updates_countdown = 0;
 
 static qboolean gyro_present = false;
@@ -1391,8 +1391,7 @@ void IN_StartGyroCalibration (void)
 	gyro_accum[1] = 0.0;
 	gyro_accum[2] = 0.0;
 
-	num_samples = 0;
-	updates_countdown = 300;
+	updates_countdown = GYRO_CALIBRATION_SAMPLES;
 }
 
 static qboolean IN_UpdateGyroCalibration (const float newsample[3])
@@ -1403,12 +1402,11 @@ static qboolean IN_UpdateGyroCalibration (const float newsample[3])
 	gyro_accum[0] += newsample[0];
 	gyro_accum[1] += newsample[1];
 	gyro_accum[2] += newsample[2];
-	num_samples++;
 
 	updates_countdown--;
 	if (!updates_countdown)
 	{
-		const float inverseSamples = 1.f / num_samples;
+		const float inverseSamples = 1.f / GYRO_CALIBRATION_SAMPLES;
 		Cvar_SetValue("gyro_calibration_x", gyro_accum[0] * inverseSamples);
 		Cvar_SetValue("gyro_calibration_y", gyro_accum[1] * inverseSamples);
 		Cvar_SetValue("gyro_calibration_z", gyro_accum[2] * inverseSamples);
@@ -1478,6 +1476,11 @@ float IN_GetRawTriggerMagnitude (void)
 qboolean IN_IsCalibratingGyro (void)
 {
 	return updates_countdown != 0;
+}
+
+float IN_GetGyroCalibrationProgress (void)
+{
+	return (GYRO_CALIBRATION_SAMPLES - updates_countdown) / (float) GYRO_CALIBRATION_SAMPLES;
 }
 
 static float IN_FilterGyroSample (float prev, float cur)
