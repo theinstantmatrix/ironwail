@@ -1385,13 +1385,18 @@ static void IN_DebugKeyEvent(SDL_Event *event)
 
 void IN_StartGyroCalibration (void)
 {
-	Con_Printf ("Calibrating, please wait...\n");
-
 	gyro_accum[0] = 0.0;
 	gyro_accum[1] = 0.0;
 	gyro_accum[2] = 0.0;
 
 	updates_countdown = GYRO_CALIBRATION_SAMPLES;
+
+	// Note: we modify updates_countdown first, before printing the message to the console,
+	// because Con_Printf triggers a redraw, which in turn calls M_Calibration_Draw,
+	// which would see that updates_countown is 0 and consider that calibration must be done.
+	// Alternatively, we could use Con_SafePrintf (which doesn't refresh the screen).
+
+	Con_Printf ("Calibrating, please wait...\n");
 }
 
 static qboolean IN_UpdateGyroCalibration (const float newsample[3])
