@@ -3119,7 +3119,7 @@ void M_Calibration_Draw (void)
 		break;
 
 	case CALIBRATION_IN_ROGRESS:
-		progress = IN_GetGyroCalibrationProgress () * (Q_COUNTOF (anim) - 1);
+		progress = (int) (IN_GetGyroCalibrationProgress () * (Q_COUNTOF (anim) - 1) + 0.5f);
 		for (i = 0; i < (int) Q_COUNTOF (anim) - 1; i++)
 			anim[i] = i < progress ? '.'|0x80 : '.';
 		anim[i] = '\0';
