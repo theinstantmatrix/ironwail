@@ -3842,10 +3842,10 @@ void M_DrawSliderWithMarkers (int x, int y, float range, const slidermarker_t *m
 	for (i = 0; i < nummarkers; i++)
 	{
 		const slidermarker_t *marker = &markers[i];
-		M_DrawCharacter (x + (SLIDER_RANGE-1)*8 * CLAMP (0.f, marker->frac, 1.f), y + marker->yofs, marker->glyph);
+		M_DrawCharacter (x + (int) ((SLIDER_RANGE-1)*8 * CLAMP (0.f, marker->frac, 1.f) + 0.5f), y + marker->yofs, marker->glyph);
 	}
 
-	M_DrawCharacter (x + (SLIDER_RANGE-1)*8 * range, y, 131);
+	M_DrawCharacter (x + (int) ((SLIDER_RANGE-1)*8 * range + 0.5f), y, 131);
 
 	i = x + (SLIDER_RANGE+2)*8;
 	if (i + 5*8 < glcanvas.right)
