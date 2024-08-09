@@ -634,8 +634,10 @@ void Con_Mousemove (int x, int y)
 {
 	if (con_mousestate == CMS_NOTPRESSED)
 	{
+		conofs_t ofs;
+		qboolean inside = Con_ScreenToOffset (x, y, &ofs, CT_INSIDE);
 		Con_SetHotLink (Con_GetLinkAtPixel (x, y));
-		VID_SetMouseCursor (con_hotlink ? MOUSECURSOR_HAND : MOUSECURSOR_DEFAULT);
+		VID_SetMouseCursor (con_hotlink ? MOUSECURSOR_HAND : inside ? MOUSECURSOR_IBEAM : MOUSECURSOR_DEFAULT);
 	}
 	else
 	{
