@@ -154,8 +154,17 @@ static int SDLCALL IN_SDL2_FilterMouseEvents (void *userdata, SDL_Event *event)
 
 void IN_ShowCursor (void)
 {
-	if (SDL_SetRelativeMouseMode(SDL_FALSE) != 0)
-		Con_Printf("WARNING: could not disable relative mouse mode (%s).\n", SDL_GetError());
+	SDL_Window *window;
+	int width, height;
+
+	if (!SDL_GetRelativeMouseMode ())
+		return;
+	if (SDL_SetRelativeMouseMode (SDL_FALSE) != 0)
+		Con_Printf ("WARNING: could not disable relative mouse mode (%s).\n", SDL_GetError ());
+
+	window = (SDL_Window *) VID_GetWindow ();
+	SDL_GetWindowSize (window, &width, &height);
+	SDL_WarpMouseInWindow (window, width/2, height/2);
 }
 
 void IN_HideCursor (void)
