@@ -390,6 +390,12 @@ static void S_UpdateLevels (int endtime)
 	int i;
 	float scale;
 
+	if (snd_vol <= 0)
+	{
+		snd_lofreqlevel = snd_hifreqlevel = 0.f;
+		return;
+	}
+
 	scale = 0.5f / (snd_vol * 32768.f);
 	for (i = 0; i < endtime; i++)
 	{
