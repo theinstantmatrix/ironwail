@@ -576,4 +576,16 @@
 	</Type>
 
 
+	<!--
+	================================================================================================================================
+	Cvar
+	================================================================================================================================
+	-->
+	<Type Name="cvar_s">
+		<DisplayString Condition="default_string != 0 &amp;&amp; strcmp(string, default_string) == 0">{name,sb}={string,s} (default) [{flags,en}]</DisplayString>
+		<DisplayString Condition="default_string != 0">{name,sb}={string,s} (default: {default_string,s}) [{flags,en}]</DisplayString>
+		<DisplayString>{name,sb}={string,s} [{flags,en}]</DisplayString>
+	</Type>
+
+
 </AutoVisualizer>
