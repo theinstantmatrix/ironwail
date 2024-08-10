@@ -157,6 +157,8 @@ void IN_ShowCursor (void)
 	SDL_Window *window;
 	int width, height;
 
+	VID_SetMouseCursor (MOUSECURSOR_DEFAULT);
+
 	if (!SDL_GetRelativeMouseMode ())
 		return;
 	if (SDL_SetRelativeMouseMode (SDL_FALSE) != 0)
