@@ -381,36 +381,6 @@ static void Con_SetHotLink (conlink_t *link)
 
 /*
 ================
-Con_GetMousePos
-
-Computes the console offset corresponding to the current mouse position
-Returns true if the offset is inside the visible portion of the console
-================
-*/
-static qboolean Con_GetMousePos (conofs_t *ofs, contest_t testmode)
-{
-	int x, y;
-	SDL_GetMouseState (&x, &y);
-	return Con_ScreenToOffset (x, y, ofs, testmode);
-}
-
-/*
-================
-Con_GetMouseLink
-
-Returns the link at the current mouse position, if any, or NULL otherwise
-================
-*/
-static conlink_t *Con_GetMouseLink (void)
-{
-	conofs_t ofs;
-	if (Con_GetMousePos (&ofs, CT_INSIDE))
-		return Con_GetLinkAtOfs (&ofs);
-	return NULL;
-}
-
-/*
-================
 Con_ClearSelection
 ================
 */

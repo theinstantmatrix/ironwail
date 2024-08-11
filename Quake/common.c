@@ -2592,37 +2592,6 @@ static void COM_Game_f (void)
 
 /*
 =================
-COM_IsFileWritable
-=================
-*/
-static qboolean COM_IsFileWritable (const char *path)
-{
-	qboolean exists = false;
-	FILE *f;
-
-	if (!path || !*path)
-		return false;
-
-	f = Sys_fopen (path, "rb");
-	if (f)
-	{
-		exists = true;
-		fclose (f);
-	}
-
-	f = Sys_fopen (path, "ab");
-	if (!f)
-		return false;
-
-	fclose (f);
-	if (!exists)
-		Sys_remove (path);
-
-	return true;
-}
-
-/*
-=================
 COM_SetBaseDir
 =================
 */
