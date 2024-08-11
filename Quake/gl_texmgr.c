@@ -541,10 +541,9 @@ TexMgr_CompressTextures_f -- called when gl_compress_textures changes
 */
 void TexMgr_CompressTextures_f (cvar_t *var)
 {
-	qboolean compress = var->value != 0.f;
 	gltexture_t	*glt;
 
-	Con_SafePrintf ("Using %s textures\n", "uncompressed" + 2 * compress);
+	Con_SafePrintf ("Using %s textures\n", var->value ? "compressed" : "uncompressed");
 
 	// In an attempt to reduce VRAM fragmentation, instead of unloading and reloading
 	// each texture sequentially, we first unload them all, then reload them
