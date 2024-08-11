@@ -25,7 +25,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 extern edict_t **bbox_linked;
 
-extern const int type_size[NUM_TYPE_SIZES] = {
+const int type_size[NUM_TYPE_SIZES] = {
 	1,					// ev_void
 	1,	// sizeof(string_t) / 4		// ev_string
 	1,					// ev_float
