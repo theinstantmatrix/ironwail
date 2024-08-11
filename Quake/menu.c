@@ -296,7 +296,7 @@ void M_PrintScroll (int x, int y, int maxwidth, const char *str, double time, qb
 	int maxchars = maxwidth / 8;
 	int len = strlen (str);
 	int i, ofs;
-	char mask = color ? 128 : 0;
+	char mask = color ? QCHAR_COLOR_MASK : 0;
 
 	if (len <= maxchars)
 	{
@@ -3121,7 +3121,7 @@ void M_Calibration_Draw (void)
 	case CALIBRATION_IN_ROGRESS:
 		progress = (int) (IN_GetGyroCalibrationProgress () * (Q_COUNTOF (anim) - 1) + 0.5f);
 		for (i = 0; i < (int) Q_COUNTOF (anim) - 1; i++)
-			anim[i] = i < progress ? '.'|0x80 : '.';
+			anim[i] = i < progress ? QCHAR_COLORED ('.') : '.';
 		anim[i] = '\0';
 		M_PrintAligned (160, y, ALIGN_CENTER, "Calibrating, please wait...");
 		M_PrintAligned (160, y + 16, ALIGN_CENTER, anim);

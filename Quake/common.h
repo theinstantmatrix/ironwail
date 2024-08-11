@@ -354,6 +354,8 @@ size_t UTF8_ToQuake (char *dst, size_t maxbytes, const char *src);
 #define UNICODE_MAX			0x10FFFF
 
 #define QCHAR_BOX			11
+#define QCHAR_COLOR_MASK	((char)0x80)
+#define QCHAR_COLORED(x)	((char)((x) | QCHAR_COLOR_MASK))
 
 //============================================================================
 

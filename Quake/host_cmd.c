@@ -181,7 +181,7 @@ static void FileList_Print (filelist_item_t *list, const char *types[2], const c
 	filelist_item_t	*item;
 	const char		*desc;
 	char			buf[256], buf2[256];
-	char			padchar = '.' | 0x80;
+	char			padchar = QCHAR_COLORED ('.');
 	size_t			ofsdesc = list == extralevels ? maxlevelnamelen + 2 : 0;
 
 	if (substr && *substr)
