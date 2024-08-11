@@ -42,12 +42,6 @@ void SV_CalcStats(client_t *client, int *statsi, float *statsf, const char **sta
 	size_t i;
 	edict_t *ent = client->edict;
 	//FIXME: string stats!
-	int items;
-	eval_t *val = GetEdictFieldValue(ent, qcvm->extfields.items2);
-	if (val)
-		items = (int)ent->v.items | ((int)val->_float << 23);
-	else
-		items = (int)ent->v.items | ((int)pr_global_struct->serverflags << 28);
 
 	memset(statsi, 0, sizeof(*statsi)*MAX_CL_STATS);
 	memset(statsf, 0, sizeof(*statsf)*MAX_CL_STATS);
