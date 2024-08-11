@@ -73,7 +73,7 @@ cvar_t	joy_rumble = { "joy_rumble", "0.3", CVAR_ARCHIVE };
 cvar_t	joy_device = { "joy_device", "0", CVAR_ARCHIVE };
 
 cvar_t gyro_enable = {"gyro_enable", "1", CVAR_ARCHIVE};
-cvar_t gyro_mode = {"gyro_mode", "0", CVAR_ARCHIVE}; // see gyromode_t
+cvar_t gyro_mode = {"gyro_mode", "2", CVAR_ARCHIVE}; // 2 = GYRO_BUTTON_DISABLES (see gyromode_t)
 cvar_t gyro_turning_axis = {"gyro_turning_axis", "0", CVAR_ARCHIVE};
 
 cvar_t gyro_yawsensitivity = {"gyro_yawsensitivity", "2.5", CVAR_ARCHIVE};
