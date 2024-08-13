@@ -543,6 +543,8 @@ void Sky_ClearAll (void)
 	for (i = 0, count = VEC_SIZE (skybox_list); i < count; i++)
 		Sky_FreeSkyBox (&skybox_list[i]);
 	VEC_CLEAR (skybox_list);
+
+	Cvar_SetQuick (&r_skyfog, r_skyfog.default_string);
 }
 
 /*
