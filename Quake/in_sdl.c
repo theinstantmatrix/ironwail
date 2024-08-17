@@ -584,14 +584,46 @@ static void Joy_Flick_f (cvar_t *cvar)
 	IN_ResetFlickState ();
 }
 
+/*
+================
+IN_UpdateSDLTextInput
+
+Calls SDL_StartTextInput/StopTextInput as needed
+based on textmode and the device type
+================
+*/
+static void IN_UpdateSDLTextInput (void)
+{
+	if (SDL_HasScreenKeyboardSupport ())
+	{
+		// Devices with an on-screen keyboard (e.g. Steam Deck) don't receive text input events by default.
+		// In order to have a functional console we need to call SDL_StartTextInput when text mode is explicitly requested.
+		// When text mode is optional, but we'd rather not have an on-screen keyboard pop up (e.g. maps & options menus),
+		// we need call SDL_StopTextInput.
+		if (textmode == TEXTMODE_ON)
+			SDL_StartTextInput ();
+		else
+			SDL_StopTextInput ();
+	}
+	else
+	{
+		// Desktop devices (without on-screen keyboards) receive text inputs by default.
+		// We only call SDL_StartTextInput if for some reason text input got deactivated
+		// (which shouldn't happen if SDL_StopTextInput is not called).
+		if (textmode == TEXTMODE_ON && !SDL_IsTextInputActive ())
+			SDL_StartTextInput ();
+	}
+}
+
+/*
+================
+IN_Init
+================
+*/
 void IN_Init (void)
 {
 	textmode = Key_TextEntry();
-
-	if (textmode == TEXTMODE_ON)
-		SDL_StartTextInput();
-	else
-		SDL_StopTextInput();
+	IN_UpdateSDLTextInput ();
 
 	if (safemode || COM_CheckParm("-nomouse"))
 	{
@@ -1228,24 +1260,13 @@ void IN_UpdateInputMode (void)
 	if (textmode != want_textmode)
 	{
 		textmode = want_textmode;
-		if (textmode == TEXTMODE_ON)
-		{
-			SDL_StartTextInput();
-			if (in_debugkeys.value)
-				Con_Printf("SDL_StartTextInput time: %g\n", Sys_DoubleTime());
-		}
-		else
-		{
-			SDL_StopTextInput();
-			if (in_debugkeys.value)
-				Con_Printf("SDL_StopTextInput time: %g\n", Sys_DoubleTime());
-		}
+		IN_UpdateSDLTextInput ();
 	}
 }
 
-textmode_t IN_GetTextMode (void)
+qboolean IN_EmulatedCharEvents (void)
 {
-	return textmode;
+	return textmode == TEXTMODE_NOPOPUP && !SDL_IsTextInputActive ();
 }
 
 keydevice_t IN_GetLastActiveDeviceType (void)

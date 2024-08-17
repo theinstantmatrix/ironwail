@@ -77,7 +77,7 @@ void IN_SendKeyEvents (void);
 void IN_UpdateInputMode (void);
 // do stuff if input mode (text/non-text) changes matter to the keyboard driver
 
-enum textmode_t IN_GetTextMode (void);
+qboolean IN_EmulatedCharEvents (void);
 
 enum keydevice_t IN_GetLastActiveDeviceType (void);
 

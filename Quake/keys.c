@@ -1193,8 +1193,9 @@ void Key_EventWithKeycode (int key, qboolean down, int keycode)
 	}
 
 // generate char events if we want text input without popping up an on-screen keyboard
-// when a physical one isn't present, e.g. when using a searchable menu on the Steam Deck
-	if (down && IN_GetTextMode () == TEXTMODE_NOPOPUP)
+// when a physical one isn't present, e.g. when using a searchable menu on the Steam Deck.
+// Note: shift modifier is currently not supported for emulated char events.
+	if (down && !keydown[K_SHIFT] && IN_EmulatedCharEvents ())
 		Char_Event (keycode);
 
 // handle escape specialy, so the user can never unbind it
