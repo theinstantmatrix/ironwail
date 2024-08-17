@@ -4026,7 +4026,7 @@ size_t LOC_Format (const char *format, const char* (*getarg_fn) (int idx, void* 
 
 static const uint32_t 	utf8_maxcode[4] = {0x7F, 0x7FF, 0xFFFF, 0x10FFFF}; // 1/2/3/4 bytes
 
-static uint8_t			unicode_translit[65536];
+static char				unicode_translit[65536][2];
 static qboolean			unicode_translit_init = false;
 
 static const uint32_t qchar_to_unicode[256] =
@@ -4248,36 +4248,58 @@ UTF8_ToQuake
 
 Transliterates a string from UTF-8 to Quake encoding
 
-Note: only single-character transliterations are used for now,
-mainly to remove diacritics
-
 Returns the number of written characters (including the NUL terminator)
 if a valid output buffer is provided (dst is non-NULL, maxbytes > 0),
 or the total amount of space necessary to encode the entire src string
 if dst is NULL and maxbytes is 0.
+
+Note: only single-character and two-character transliterations are used
+so that the string is never expanded during the process.
 ==================
 */
 size_t UTF8_ToQuake (char *dst, size_t maxbytes, const char *src)
 {
 	size_t i, j;
+	uint32_t cp;
 
 	if (!unicode_translit_init)
 	{
-		// single-character transliterations
+		// precomputed single-character/two-character transliterations
 		for (i = 0; i < countof (unicode_translit_src); i++)
-			unicode_translit[unicode_translit_src[i][0]] = (uint8_t) unicode_translit_src[i][1];
+		{
+			unicode_translit[unicode_translit_src[i].code][0] = unicode_translit_src[i].remap[0];
+			unicode_translit[unicode_translit_src[i].code][1] = unicode_translit_src[i].remap[1];
+		}
 
 		// Quake-specific characters: we process the list in reverse order
 		// so that codepoints used for both colored and non-colored qchars
 		// end up being remapped to the non-colored versions
 		// Note: 0 is not included
 		for (i = countof (qchar_to_unicode) - 1; i > 0; i--)
+		{
 			if (qchar_to_unicode[i] >= 128 && qchar_to_unicode[i] < countof (unicode_translit))
-				unicode_translit[qchar_to_unicode[i]] = (uint8_t) i;
+			{
+				unicode_translit[qchar_to_unicode[i]][0] = (char) i;
+				unicode_translit[qchar_to_unicode[i]][1] = '\0';
+			}
+		}
 
 		// map ASCII characters to themselves
 		for (i = 0; i < 128; i++)
-			unicode_translit[i] = (uint8_t) i;
+		{
+			unicode_translit[i][0] = (char) i;
+			unicode_translit[i][1] = '\0';
+		}
+
+		// Map all other characters to QCHAR_BOX (unknown character)
+		for (i = 0; i < Q_COUNTOF (unicode_translit); i++)
+		{
+			if (!unicode_translit[i])
+			{
+				unicode_translit[i][0] = QCHAR_BOX;
+				unicode_translit[i][1] = '\0';
+			}
+		}
 
 		unicode_translit_init = true;
 	}
@@ -4300,10 +4322,12 @@ size_t UTF8_ToQuake (char *dst, size_t maxbytes, const char *src)
 			if (!*src)
 				break;
 
-			// Every codepoint maps to a single Quake character
-			UTF8_ReadCodePoint (&src);
-
-			j++;
+			// A codepoint maps to either one or two Quake characters
+			cp = UTF8_ReadCodePoint (&src);
+			if (cp < Q_COUNTOF (unicode_translit))
+				j += unicode_translit[cp][1] != '\0' ? 2 : 1;
+			else
+				j++;
 		}
 
 		return j + 1; // include terminator
@@ -4313,8 +4337,6 @@ size_t UTF8_ToQuake (char *dst, size_t maxbytes, const char *src)
 
 	for (i = 0; i < maxbytes && *src; i++)
 	{
-		uint32_t cp;
-
 		// ASCII fast path
 		while (*src && i < maxbytes && (byte)*src < 0x80)
 			dst[i++] = *src++;
@@ -4325,14 +4347,14 @@ size_t UTF8_ToQuake (char *dst, size_t maxbytes, const char *src)
 		cp = UTF8_ReadCodePoint (&src);
 		if (cp < countof (unicode_translit))
 		{
-			cp = unicode_translit[cp];
-			if (!cp)
-				cp = QCHAR_BOX;
+			char c0 = unicode_translit[cp][0];
+			char c1 = unicode_translit[cp][1];
+			dst[i] = c0;
+			if (c1 && i + 1 < maxbytes)
+				dst[++i] = c1;
 		}
 		else
-			cp = QCHAR_BOX;
-
-		dst[i] = (uint8_t) cp;
+			dst[i] = QCHAR_BOX;
 	}
 
 	dst[i++] = '\0';
