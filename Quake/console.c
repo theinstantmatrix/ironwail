@@ -1722,20 +1722,22 @@ static const char *ParseCommand (void)
 	return ret;
 }
 
-static void CompleteFileList (const char *partial, void *param)
+static qboolean CompleteFileList (const char *partial, void *param)
 {
 	filelist_item_t *file, **list = (filelist_item_t **) param;
 	for (file = *list; file; file = file->next)
 		Con_AddToTabList (file->name, partial, NULL);
+	return true;
 }
 
-static void CompleteFileListSingle (const char *partial, void *param)
+static qboolean CompleteFileListSingle (const char *partial, void *param)
 {
 	if (Cmd_Argc () < 3)
 		CompleteFileList (partial, param);
+	return true;
 }
 
-static void CompleteClassnames (const char *partial, void *unused)
+static qboolean CompleteClassnames (const char *partial, void *unused)
 {
 	extern edict_t *sv_player;
 	qcvm_t	*oldvm;
@@ -1743,7 +1745,7 @@ static void CompleteClassnames (const char *partial, void *unused)
 	int		i;
 
 	if (!sv.active)
-		return;
+		return true;
 	PR_PushQCVM (&sv.qcvm, &oldvm);
 
 	for (i = 1, ed = NEXT_EDICT (qcvm->edicts); i < qcvm->num_edicts; i++, ed = NEXT_EDICT (ed))
@@ -1757,14 +1759,17 @@ static void CompleteClassnames (const char *partial, void *unused)
 	}
 
 	PR_PopQCVM (oldvm);
+
+	return true;
 }
 
-static void CompleteBindKeys (const char *partial, void *unused)
+static qboolean CompleteBindKeys (const char *partial, void *unused)
 {
 	int i;
 
+	// fall back to default tab completion after 1st arg (key name)
 	if (Cmd_Argc () > 2)
-		return;
+		return false;
 
 	for (i = 0; i < MAX_KEYS; i++)
 	{
@@ -1772,11 +1777,17 @@ static void CompleteBindKeys (const char *partial, void *unused)
 		if (strcmp (name, "<UNKNOWN KEYNUM>") != 0)
 			Con_AddToTabList (name, partial, keybindings[i]);
 	}
+
+	return true;
 }
 
-static void CompleteUnbindKeys (const char *partial, void *unused)
+static qboolean CompleteUnbindKeys (const char *partial, void *unused)
 {
 	int i;
+
+	// disable completion after 1st arg (key name)
+	if (Cmd_Argc () > 2)
+		return true;
 
 	for (i = 0; i < MAX_KEYS; i++)
 	{
@@ -1787,12 +1798,14 @@ static void CompleteUnbindKeys (const char *partial, void *unused)
 				Con_AddToTabList (name, partial, keybindings[i]);
 		}
 	}
+
+	return true;
 }
 
 typedef struct arg_completion_type_s
 {
 	const char		*command;
-	void			(*function) (const char *partial, void *param);
+	qboolean		(*function) (const char *partial, void *param);
 	void			*param;
 } arg_completion_type_t;
 
@@ -1859,8 +1872,9 @@ static void BuildTabList (const char *partial)
 
 			if (!q_strcasecmp (Cmd_Argv (0), arg_completion.command))
 			{
-				arg_completion.function (partial, arg_completion.param);
-				return;
+				if (arg_completion.function (partial, arg_completion.param))
+					return;
+				break;
 			}
 		}
 	}
