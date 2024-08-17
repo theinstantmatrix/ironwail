@@ -4294,7 +4294,7 @@ size_t UTF8_ToQuake (char *dst, size_t maxbytes, const char *src)
 		// Map all other characters to QCHAR_BOX (unknown character)
 		for (i = 0; i < Q_COUNTOF (unicode_translit); i++)
 		{
-			if (!unicode_translit[i])
+			if (!unicode_translit[i][0])
 			{
 				unicode_translit[i][0] = QCHAR_BOX;
 				unicode_translit[i][1] = '\0';
