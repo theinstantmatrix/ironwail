@@ -1722,15 +1722,20 @@ static const char *ParseCommand (void)
 	return ret;
 }
 
-static qboolean CompleteFileList (const char *partial, void *param)
+static void CompleteFileList (const char *partial, void *param)
 {
 	filelist_item_t *file, **list = (filelist_item_t **) param;
 	for (file = *list; file; file = file->next)
 		Con_AddToTabList (file->name, partial, NULL);
-	return true;
 }
 
-static qboolean CompleteClassnames (const char *partial, void *unused)
+static void CompleteFileListSingle (const char *partial, void *param)
+{
+	if (Cmd_Argc () < 3)
+		CompleteFileList (partial, param);
+}
+
+static void CompleteClassnames (const char *partial, void *unused)
 {
 	extern edict_t *sv_player;
 	qcvm_t	*oldvm;
@@ -1738,7 +1743,7 @@ static qboolean CompleteClassnames (const char *partial, void *unused)
 	int		i;
 
 	if (!sv.active)
-		return true;
+		return;
 	PR_PushQCVM (&sv.qcvm, &oldvm);
 
 	for (i = 1, ed = NEXT_EDICT (qcvm->edicts); i < qcvm->num_edicts; i++, ed = NEXT_EDICT (ed))
@@ -1752,16 +1757,14 @@ static qboolean CompleteClassnames (const char *partial, void *unused)
 	}
 
 	PR_PopQCVM (oldvm);
-
-	return true;
 }
 
-static qboolean CompleteBindKeys (const char *partial, void *unused)
+static void CompleteBindKeys (const char *partial, void *unused)
 {
 	int i;
 
 	if (Cmd_Argc () > 2)
-		return false;
+		return;
 
 	for (i = 0; i < MAX_KEYS; i++)
 	{
@@ -1769,11 +1772,9 @@ static qboolean CompleteBindKeys (const char *partial, void *unused)
 		if (strcmp (name, "<UNKNOWN KEYNUM>") != 0)
 			Con_AddToTabList (name, partial, keybindings[i]);
 	}
-
-	return true;
 }
 
-static qboolean CompleteUnbindKeys (const char *partial, void *unused)
+static void CompleteUnbindKeys (const char *partial, void *unused)
 {
 	int i;
 
@@ -1786,28 +1787,26 @@ static qboolean CompleteUnbindKeys (const char *partial, void *unused)
 				Con_AddToTabList (name, partial, keybindings[i]);
 		}
 	}
-
-	return true;
 }
 
 typedef struct arg_completion_type_s
 {
 	const char		*command;
-	qboolean		(*function) (const char *partial, void *param);
+	void			(*function) (const char *partial, void *param);
 	void			*param;
 } arg_completion_type_t;
 
 static const arg_completion_type_t arg_completion_types[] =
 {
-	{ "map",					CompleteFileList,		&extralevels },
-	{ "changelevel",			CompleteFileList,		&extralevels },
+	{ "map",					CompleteFileListSingle,	&extralevels },
+	{ "changelevel",			CompleteFileListSingle,	&extralevels },
 	{ "game",					CompleteFileList,		&modlist },
-	{ "record",					CompleteFileList,		&demolist },
-	{ "playdemo",				CompleteFileList,		&demolist },
-	{ "timedemo",				CompleteFileList,		&demolist },
-	{ "load",					CompleteFileList,		&savelist },
-	{ "save",					CompleteFileList,		&savelist },
-	{ "sky",					CompleteFileList,		&skylist },
+	{ "record",					CompleteFileListSingle,	&demolist },
+	{ "playdemo",				CompleteFileListSingle,	&demolist },
+	{ "timedemo",				CompleteFileListSingle,	&demolist },
+	{ "load",					CompleteFileListSingle,	&savelist },
+	{ "save",					CompleteFileListSingle,	&savelist },
+	{ "sky",					CompleteFileListSingle,	&skylist },
 	{ "r_showbboxes_filter",	CompleteClassnames,		NULL },
 	{ "bind",					CompleteBindKeys,		NULL },
 	{ "unbind",					CompleteUnbindKeys,		NULL },
@@ -1860,9 +1859,8 @@ static void BuildTabList (const char *partial)
 
 			if (!q_strcasecmp (Cmd_Argv (0), arg_completion.command))
 			{
-				if (arg_completion.function (partial, arg_completion.param))
-					return;
-				break;
+				arg_completion.function (partial, arg_completion.param);
+				return;
 			}
 		}
 	}
