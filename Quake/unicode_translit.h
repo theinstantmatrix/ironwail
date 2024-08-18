@@ -12,10 +12,12 @@ latin_extended_a        = range(0x0100, 0x017F+1)
 latin_extended_b        = range(0x0180, 0x024F+1)
 cyrillic                = range(0x0400, 0x04FF+1)
 cyrillic_supplementary  = range(0x0500, 0x052F+1)
+general_punctuation     = range(0x2000, 0x206F+1)
 
 def char_literal(c):
     s = chr(c)
     s = s.replace('\\', '\\\\')
+    s = s.replace('\n', '\\n')
     s = s.replace('\'', '\\\'')
     return f"'{s}'"
 
@@ -24,7 +26,7 @@ print('/%s Single-character transliterations (based on Unidecode) %s/' % ('*', '
 with open(__file__, 'r') as source:
     print('/%s\n%s\n%s/' % ('*', source.read(), '*'))
 print("static const struct { uint16_t code; char remap[2]; } unicode_translit_src[] =\n{")
-for codepoint in itertools.chain(basic_latin, latin1_supplement, latin_extended_a, latin_extended_b, cyrillic, cyrillic_supplementary):
+for codepoint in itertools.chain(basic_latin, latin1_supplement, latin_extended_a, latin_extended_b, cyrillic, cyrillic_supplementary, general_punctuation):
     if 0xd800 <= codepoint <= 0xdfff:
         continue
     srcstr = chr(codepoint)
@@ -672,4 +674,72 @@ static const struct { uint16_t code; char remap[2]; } unicode_translit_src[] =
 	{1269, {'c', 'h'}}, // CYRILLIC SMALL LETTER CHE WITH DIAERESIS
 	{1272, {'Y'}}, // CYRILLIC CAPITAL LETTER YERU WITH DIAERESIS
 	{1273, {'y'}}, // CYRILLIC SMALL LETTER YERU WITH DIAERESIS
+	{8192, {' '}}, // EN QUAD
+	{8193, {' '}}, // EM QUAD
+	{8194, {' '}}, // EN SPACE
+	{8195, {' '}}, // EM SPACE
+	{8196, {' '}}, // THREE-PER-EM SPACE
+	{8197, {' '}}, // FOUR-PER-EM SPACE
+	{8198, {' '}}, // SIX-PER-EM SPACE
+	{8199, {' '}}, // FIGURE SPACE
+	{8200, {' '}}, // PUNCTUATION SPACE
+	{8201, {' '}}, // THIN SPACE
+	{8202, {' '}}, // HAIR SPACE
+	{8203, {' '}}, // ZERO WIDTH SPACE
+	{8208, {'-'}}, // HYPHEN
+	{8209, {'-'}}, // NON-BREAKING HYPHEN
+	{8210, {'-'}}, // FIGURE DASH
+	{8211, {'-'}}, // EN DASH
+	{8212, {'-', '-'}}, // EM DASH
+	{8213, {'-', '-'}}, // HORIZONTAL BAR
+	{8214, {'|', '|'}}, // DOUBLE VERTICAL LINE
+	{8215, {'_'}}, // DOUBLE LOW LINE
+	{8216, {'\''}}, // LEFT SINGLE QUOTATION MARK
+	{8217, {'\''}}, // RIGHT SINGLE QUOTATION MARK
+	{8218, {','}}, // SINGLE LOW-9 QUOTATION MARK
+	{8219, {'\''}}, // SINGLE HIGH-REVERSED-9 QUOTATION MARK
+	{8220, {'"'}}, // LEFT DOUBLE QUOTATION MARK
+	{8221, {'"'}}, // RIGHT DOUBLE QUOTATION MARK
+	{8222, {',', ','}}, // DOUBLE LOW-9 QUOTATION MARK
+	{8223, {'"'}}, // DOUBLE HIGH-REVERSED-9 QUOTATION MARK
+	{8224, {'+'}}, // DAGGER
+	{8225, {'+', '+'}}, // DOUBLE DAGGER
+	{8226, {'*'}}, // BULLET
+	{8227, {'*', '>'}}, // TRIANGULAR BULLET
+	{8228, {'.'}}, // ONE DOT LEADER
+	{8229, {'.', '.'}}, // TWO DOT LEADER
+	{8231, {'.'}}, // HYPHENATION POINT
+	{8232, {'\n'}}, // LINE SEPARATOR
+	{8233, {'\n', '\n'}}, // PARAGRAPH SEPARATOR
+	{8239, {' '}}, // NARROW NO-BREAK SPACE
+	{8240, {'%', '0'}}, // PER MILLE SIGN
+	{8242, {'\''}}, // PRIME
+	{8243, {'\'', '\''}}, // DOUBLE PRIME
+	{8245, {'`'}}, // REVERSED PRIME
+	{8246, {'`', '`'}}, // REVERSED DOUBLE PRIME
+	{8248, {'^'}}, // CARET
+	{8249, {'<'}}, // SINGLE LEFT-POINTING ANGLE QUOTATION MARK
+	{8250, {'>'}}, // SINGLE RIGHT-POINTING ANGLE QUOTATION MARK
+	{8251, {'*'}}, // REFERENCE MARK
+	{8252, {'!', '!'}}, // DOUBLE EXCLAMATION MARK
+	{8253, {'!', '?'}}, // INTERROBANG
+	{8254, {'-'}}, // OVERLINE
+	{8255, {'_'}}, // UNDERTIE
+	{8256, {'-'}}, // CHARACTER TIE
+	{8257, {'^'}}, // CARET INSERTION POINT
+	{8259, {'-', '-'}}, // HYPHEN BULLET
+	{8260, {'/'}}, // FRACTION SLASH
+	{8261, {'-', '['}}, // LEFT SQUARE BRACKET WITH QUILL
+	{8262, {']', '-'}}, // RIGHT SQUARE BRACKET WITH QUILL
+	{8263, {'?', '?'}}, // DOUBLE QUESTION MARK
+	{8264, {'?', '!'}}, // QUESTION EXCLAMATION MARK
+	{8265, {'!', '?'}}, // EXCLAMATION QUESTION MARK
+	{8266, {'&'}}, // TIRONIAN SIGN ET
+	{8267, {'P', 'P'}}, // REVERSED PILCROW SIGN
+	{8268, {'(', ']'}}, // BLACK LEFTWARDS BULLET
+	{8269, {'[', ')'}}, // BLACK RIGHTWARDS BULLET
+	{8270, {'*'}}, // LOW ASTERISK
+	{8274, {'%'}}, // COMMERCIAL MINUS SIGN
+	{8275, {'~'}}, // SWUNG DASH
+	{8287, {' '}}, // MEDIUM MATHEMATICAL SPACE
 };
