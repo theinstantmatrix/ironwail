@@ -588,4 +588,34 @@
 	</Type>
 
 
+	<!--
+	================================================================================================================================
+	Localization entry
+	================================================================================================================================
+	-->
+	<Type Name="locentry_t">
+		<DisplayString>{key,sb}={value,s}</DisplayString>
+	</Type>
+
+
+	<!--
+	================================================================================================================================
+	Localization
+	================================================================================================================================
+	-->
+	<Type Name="localization_t">
+		<DisplayString>[{numentries} entries]</DisplayString>
+		<Expand>
+			<CustomListItems>
+				<Variable Name="i" InitialValue="0"/>
+				<Loop>
+					<Break Condition="i &gt;= numentries"/>
+					<Item Name="{entries[i].key,sb}">entries[i].value,s</Item>
+					<Exec>i++</Exec>
+				</Loop>
+			</CustomListItems>
+		</Expand>
+	</Type>
+
+
 </AutoVisualizer>
