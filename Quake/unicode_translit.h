@@ -5,14 +5,15 @@ import itertools
 import unicodedata
 from unidecode import unidecode
 
-# unicode ranges
-basic_latin             = range(0x0020, 0x007F+1)
-latin1_supplement       = range(0x00A0, 0x00FF+1)
-latin_extended_a        = range(0x0100, 0x017F+1)
-latin_extended_b        = range(0x0180, 0x024F+1)
-cyrillic                = range(0x0400, 0x04FF+1)
-cyrillic_supplementary  = range(0x0500, 0x052F+1)
-general_punctuation     = range(0x2000, 0x206F+1)
+unicode_ranges = itertools.chain(
+    range(0x0020, 0x007F+1),    # Basic Latin
+    range(0x00A0, 0x00FF+1),    # Latin-1 Supplement
+    range(0x0100, 0x017F+1),    # Latin Extended-A
+    range(0x0180, 0x024F+1),    # Latin Extended-B
+    range(0x0400, 0x04FF+1),    # Cyrillic
+    range(0x0500, 0x052F+1),    # Cyrillic Supplementary
+    range(0x2000, 0x206F+1),    # General Punctuation
+)
 
 def char_literal(c):
     s = chr(c)
@@ -26,7 +27,7 @@ print('/%s Single-character transliterations (based on Unidecode) %s/' % ('*', '
 with open(__file__, 'r') as source:
     print('/%s\n%s\n%s/' % ('*', source.read(), '*'))
 print("static const struct { uint16_t code; char remap[2]; } unicode_translit_src[] =\n{")
-for codepoint in itertools.chain(basic_latin, latin1_supplement, latin_extended_a, latin_extended_b, cyrillic, cyrillic_supplementary, general_punctuation):
+for codepoint in unicode_ranges:
     if 0xd800 <= codepoint <= 0xdfff:
         continue
     srcstr = chr(codepoint)
