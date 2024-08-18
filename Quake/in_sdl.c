@@ -972,7 +972,7 @@ void IN_Commands (void)
 	joy_axisstate = newaxisstate;
 
 #if SDL_VERSION_ATLEAST (2, 0, 9)
-	if (joy_has_rumble && joy_rumble.value > 0.f)
+	if (joy_has_rumble && !IN_IsCalibratingGyro () && joy_rumble.value > 0.f)
 	{
 		float strength = CLAMP (0.f, joy_rumble.value, 1.f) * 0xffff;
 		float lofreq = GetClampedFraction (S_GetLoFreqLevel (), 0.067f, 0.45f);
@@ -1417,6 +1417,12 @@ static void IN_DebugKeyEvent(SDL_Event *event)
 
 void IN_StartGyroCalibration (void)
 {
+#if SDL_VERSION_ATLEAST (2, 0, 9)
+	// Disable rumble temporarily
+	if (joy_has_rumble)
+		SDL_GameControllerRumble (joy_active_controller, 0, 0, 100);
+#endif // SDL_VERSION_ATLEAST (2, 0, 9)
+
 	gyro_accum[0] = 0.0;
 	gyro_accum[1] = 0.0;
 	gyro_accum[2] = 0.0;
