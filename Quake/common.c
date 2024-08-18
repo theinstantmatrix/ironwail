@@ -3490,7 +3490,7 @@ LOC_LoadFile
 qboolean LOC_LoadFile (const char *file)
 {
 	char path[1024];
-	int i,lineno;
+	int i,lineno,warnings;
 	char *cursor;
 
 	SDL_RWops *rw = NULL;
@@ -3591,6 +3591,7 @@ fail:			mz_zip_reader_end(&archive);
 	if ((unsigned char)(cursor[0]) == 0xEF && (unsigned char)(cursor[1]) == 0xBB && (unsigned char)(cursor[2]) == 0xBF)
 		cursor += 3;
 
+	warnings = 0;
 	lineno = 0;
 	while (*cursor)
 	{
@@ -3701,6 +3702,19 @@ fail:			mz_zip_reader_end(&archive);
 
 			UTF8_ToQuake (value, strlen (value) + 1, value);
 
+			// Log entries with unprintable characters if developer is set to 2 or higher
+			if (developer.value >= 2.f && strchr (value, QCHAR_BOX))
+			{
+				int trim = (int) strlen (value);
+				// trim trailing newlines
+				while (trim > 0 && value[trim - 1] == '\n')
+					--trim;
+				// print header before first entry
+				if (!warnings++)
+					Sys_Printf ("Entries with unprintable characters:\n");
+				Sys_Printf ("   %d. %s = \"%.*s\"\n", warnings, line, trim, value);
+			}
+
 			entry = &localization.entries[localization.numentries++];
 			entry->key = line;
 			entry->value = value;
@@ -3709,6 +3723,9 @@ fail:			mz_zip_reader_end(&archive);
 		if (*cursor)
 			*cursor++ = 0; // terminate line and advance to next
 	}
+
+	if (developer.value >= 2.f && warnings > 0)
+		Sys_Printf ("%d strings with unprintable characters\n", warnings);
 
 	// hash all entries
 
