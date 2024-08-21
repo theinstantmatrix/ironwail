@@ -6333,7 +6333,12 @@ void M_Mods_Key (int key)
 	case K_MOUSE2:
 		M_List_ClearSearch (&modsmenu.list);
 		m_state = modsmenu.prev;
-		m_entersound = true;
+		if (m_state == m_none)
+		{
+			IN_Activate ();
+			key_dest = key_game;
+		}
+		M_ThrottledSound ("misc/menu2.wav");
 		break;
 
 	case K_ENTER:
