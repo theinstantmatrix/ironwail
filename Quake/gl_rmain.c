@@ -111,6 +111,9 @@ cvar_t	r_noshadow_list = {"r_noshadow_list", "progs/flame2.mdl,progs/flame.mdl,p
 extern cvar_t	r_vfog;
 extern cvar_t	vid_fsaa;
 //johnfitz
+extern cvar_t	r_softemu_dither;
+extern cvar_t	r_softemu_dither_screen;
+extern cvar_t	r_softemu_dither_texture;
 
 cvar_t	gl_zfix = {"gl_zfix", "1", CVAR_ARCHIVE}; // QuakeSpasm z-fighting fix
 
@@ -311,6 +314,8 @@ void GL_DeleteFrameBuffers (void)
 //
 //==============================================================================
 
+static const float NOISESCALE = 9.f / 255.f;
+
 extern GLuint gl_palette_lut;
 extern GLuint gl_palette_buffer[2];
 
@@ -322,12 +327,14 @@ GL_PostProcess
 void GL_PostProcess (void)
 {
 	int palidx, variant;
+	float dither;
 	if (!GL_NeedsPostprocess ())
 		return;
 
 	GL_BeginGroup ("Postprocess");
 
 	palidx =  GLPalette_Postprocess ();
+	dither = (softemu == SOFTEMU_FINE) ? NOISESCALE * r_softemu_dither.value * r_softemu_dither_screen.value : 0.f;
 
 	GL_BindFramebufferFunc (GL_FRAMEBUFFER, 0);
 	glViewport (glx, gly, glwidth, glheight);
@@ -339,7 +346,7 @@ void GL_PostProcess (void)
 	GL_BindNative (GL_TEXTURE1, GL_TEXTURE_3D, gl_palette_lut);
 	GL_BindBufferRange (GL_SHADER_STORAGE_BUFFER, 0, gl_palette_buffer[palidx], 0, 256 * sizeof (GLuint));
 	if (variant != 2) // some AMD drivers optimize out the uniform in variant #2
-		GL_Uniform3fFunc (0, vid_gamma.value, q_min(2.0f, q_max(1.0f, vid_contrast.value)), 1.f/r_refdef.scale);
+		GL_Uniform4fFunc (0, vid_gamma.value, q_min(2.0f, q_max(1.0f, vid_contrast.value)), 1.f/r_refdef.scale, dither);
 
 	glDrawArrays (GL_TRIANGLES, 0, 3);
 
@@ -923,6 +930,16 @@ void R_SetupView (void)
 	r_framedata.eyepos[1] = r_refdef.vieworg[1];
 	r_framedata.eyepos[2] = r_refdef.vieworg[2];
 	r_framedata.time = cl.time;
+	if (softemu == SOFTEMU_FINE || softemu == SOFTEMU_COARSE)
+	{
+		r_framedata.screendither = NOISESCALE * r_softemu_dither.value * r_softemu_dither_screen.value;
+		r_framedata.texturedither = NOISESCALE * r_softemu_dither.value * r_softemu_dither_texture.value;
+	}
+	else
+	{
+		r_framedata.screendither = 0.f;
+		r_framedata.texturedither = 0.f;
+	}
 
 	Fog_SetupFrame (); //johnfitz
 	Sky_SetupFrame ();

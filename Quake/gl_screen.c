@@ -81,6 +81,7 @@ float		scr_conlines;		// lines of console to display
 //johnfitz -- new cvars
 cvar_t		scr_menuscale = {"scr_menuscale", "1", CVAR_ARCHIVE};
 cvar_t		scr_menubgalpha = {"scr_menubgalpha", "0.7", CVAR_ARCHIVE};
+cvar_t		scr_menubgstyle = {"scr_menubgstyle", "-1", CVAR_ARCHIVE};
 cvar_t		scr_sbarscale = {"scr_sbarscale", "1", CVAR_ARCHIVE};
 cvar_t		scr_sbaralpha = {"scr_sbaralpha", "0.75", CVAR_ARCHIVE};
 cvar_t		scr_conwidth = {"scr_conwidth", "0", CVAR_ARCHIVE};
@@ -541,6 +542,7 @@ void SCR_Init (void)
 	//johnfitz -- new cvars
 	Cvar_RegisterVariable (&scr_menuscale);
 	Cvar_RegisterVariable (&scr_menubgalpha);
+	Cvar_RegisterVariable (&scr_menubgstyle);
 	Cvar_RegisterVariable (&scr_sbarscale);
 	Cvar_SetCallback (&scr_sbaralpha, SCR_Callback_refdef);
 	Cvar_RegisterVariable (&scr_sbaralpha);

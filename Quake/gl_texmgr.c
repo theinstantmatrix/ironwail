@@ -39,6 +39,12 @@ static const struct {
 
 cvar_t			r_softemu = {"r_softemu", "0", CVAR_ARCHIVE};
 cvar_t			r_softemu_metric = {"r_softemu_metric", "-1", CVAR_ARCHIVE};
+cvar_t			r_softemu_lightmap_banding = {"r_softemu_lightmap_banding", "-1", CVAR_ARCHIVE};
+cvar_t			r_softemu_mdl_warp = {"r_softemu_mdl_warp", "-1", CVAR_ARCHIVE};
+cvar_t			r_softemu_dither = {"r_softemu_dither", "1.0", CVAR_ARCHIVE};
+cvar_t			r_softemu_dither_screen = {"r_softemu_dither_screen", "1.0", CVAR_ARCHIVE};
+cvar_t			r_softemu_dither_texture = {"r_softemu_dither_texture", "1.0", CVAR_ARCHIVE};
+
 static cvar_t	gl_max_size = {"gl_max_size", "0", CVAR_NONE};
 static cvar_t	gl_picmip = {"gl_picmip", "0", CVAR_NONE};
 cvar_t			gl_lodbias = {"gl_lodbias", "auto", CVAR_ARCHIVE };
@@ -333,8 +339,8 @@ void TexMgr_ApplySettings (void)
 	gl_texfilter.anisotropy	= CLAMP (1.f, gl_texture_anisotropy.value, gl_max_anisotropy);
 	gl_texfilter.lodbias	= lodbias;
 
-	// softemu 2 & 3 override filtering mode, unless it's GL_NEAREST
-	if (softemu >= SOFTEMU_COARSE && gl_texfilter.mode != 0)
+	// if softemu is either 2 & 3 or r_softemu_lightmap_banding is > 0 we override the filtering mode, unless it's GL_NEAREST
+	if (gl_texfilter.mode != 0 && (softemu >= SOFTEMU_COARSE || r_softemu_lightmap_banding.value > 0.f))
 	{
 		const float SOFTEMU_ANISOTROPY = 8.f;
 		gl_texfilter.mode = 2; // nearest with linear mips
@@ -867,6 +873,12 @@ void TexMgr_Init (void)
 	Cvar_SetCallback (&gl_lodbias, TexMgr_LodBias_f);
 	Cvar_RegisterVariable (&r_softemu);
 	Cvar_SetCallback (&r_softemu, TexMgr_SoftEmu_f);
+	Cvar_RegisterVariable (&r_softemu_lightmap_banding);
+	Cvar_SetCallback (&r_softemu_lightmap_banding, TexMgr_SoftEmu_f);
+	Cvar_RegisterVariable (&r_softemu_mdl_warp);
+	Cvar_RegisterVariable (&r_softemu_dither);
+	Cvar_RegisterVariable (&r_softemu_dither_screen);
+	Cvar_RegisterVariable (&r_softemu_dither_texture);
 	Cmd_AddCommand ("gl_describetexturemodes", &TexMgr_DescribeTextureModes_f);
 	cmd = Cmd_AddCommand ("imagelist", &TexMgr_Imagelist_f);
 	if (cmd)

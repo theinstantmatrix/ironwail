@@ -71,6 +71,8 @@ struct ibuf_s {
 		vec3_t	eyepos;
 		float	_pad;
 		vec4_t	fog;
+		float	dither;
+		float	_padding[3];
 	} global;
 	aliasinstance_t inst[MAX_ALIAS_INSTANCES];
 } ibuf;
@@ -292,10 +294,11 @@ R_FlushAliasInstances
 */
 void R_FlushAliasInstances (void)
 {
+	extern cvar_t r_softemu_mdl_warp;
 	qmodel_t	*model;
 	aliashdr_t	*paliashdr;
 	qboolean	alphatest, translucent, oit, md5;
-	GLuint		program;
+	int			mode;
 	unsigned	state;
 	GLuint		buf;
 	GLbyte		*ofs;
@@ -320,16 +323,16 @@ void R_FlushAliasInstances (void)
 	switch (softemu)
 	{
 	case SOFTEMU_BANDED:
-		program = glprogs.alias[oit][ALIASSHADER_NOPERSP][alphatest][md5];
+		mode = r_softemu_mdl_warp.value != 0.f ? ALIASSHADER_NOPERSP : ALIASSHADER_STANDARD;
 		break;
 	case SOFTEMU_COARSE:
-		program = glprogs.alias[oit][ALIASSHADER_DITHER][alphatest][md5];
+		mode = r_softemu_mdl_warp.value > 0.f ? ALIASSHADER_NOPERSP : ALIASSHADER_DITHER;
 		break;
 	default:
-		program = glprogs.alias[oit][ALIASSHADER_STANDARD][alphatest][md5];
+		mode = r_softemu_mdl_warp.value > 0.f ? ALIASSHADER_NOPERSP : ALIASSHADER_STANDARD;
 		break;
 	}
-	GL_UseProgram (program);
+	GL_UseProgram (glprogs.alias[oit][mode][alphatest][md5]);
 
 	if (md5)
 		state = GLS_CULL_BACK | GLS_ATTRIBS(5);
@@ -351,6 +354,7 @@ void R_FlushAliasInstances (void)
 			-fabs (r_framedata.fogdata[3]) :
 			 fabs (r_framedata.fogdata[3])
 	;
+	ibuf.global.dither = r_framedata.screendither;
 
 	ibuf_size = sizeof(ibuf.global) + sizeof(ibuf.inst[0]) * ibuf.count;
 	GL_Upload (GL_SHADER_STORAGE_BUFFER, &ibuf.global, ibuf_size, &buf, &ofs);
