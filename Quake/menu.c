@@ -52,6 +52,7 @@ extern cvar_t vid_vsync;
 extern cvar_t vid_fsaamode;
 extern cvar_t vid_fsaa;
 extern cvar_t r_softemu;
+extern cvar_t r_softemu_mdl_warp;
 extern cvar_t r_waterwarp;
 extern cvar_t r_oit;
 extern cvar_t r_alphasort;
@@ -3258,6 +3259,7 @@ void M_Menu_Gamepad_f (void)
 	def (VID_OPT_WATERWARP,		"Underwater FX")	\
 	def (VID_OPT_DLIGHTS,		"Dynamic Lights")	\
 	def (VID_OPT_SOFTEMU,		"8-bit Mode")		\
+	def (VID_OPT_SOFTEMU_MDL,	"Model Warping")	\
 	def (VID_OPT_FPSLIMIT,		"FPS Limit")		\
 	def (VID_OPT_SHOWFPS,		"Show FPS")			\
 ////////////////////////////////////////////////////
@@ -3544,6 +3546,18 @@ static void M_Options_SetUIMouse (uimouse_t opt)
 	}
 }
 
+static void M_CycleCvar (cvar_t *cvar, int minval, int maxval, int dir)
+{
+	int range = maxval + 1 - minval;
+	int value = (int) cvar->value + dir;
+	value -= minval;
+	value %= range;
+	if (value < 0)
+		value += range;
+	value += minval;
+	Cvar_SetValueQuick (cvar, (float) value);
+}
+
 void M_AdjustSliders (int dir)
 {
 	int	curr_alwaysrun, target_alwaysrun;
@@ -3745,6 +3759,9 @@ void M_AdjustSliders (int dir)
 		break;
 	case VID_OPT_SOFTEMU:
 		Cvar_SetValueQuick (&r_softemu, (int)(q_max (r_softemu.value, 0.f) + 4 + dir) % 4);
+		break;
+	case VID_OPT_SOFTEMU_MDL:
+		M_CycleCvar (&r_softemu_mdl_warp, -1, 1, dir);
 		break;
 	case VID_OPT_FPSLIMIT:
 		VID_Menu_ChooseNextFPSLimit (-dir);
@@ -4241,6 +4258,13 @@ static void M_Options_DrawItem (int y, int item)
 		break;
 	case VID_OPT_SOFTEMU:
 		M_Print (x, y, VID_Menu_GetSoftEmuDesc ());
+		break;
+	case VID_OPT_SOFTEMU_MDL:
+		if (r_softemu_mdl_warp.value < 0.f)
+			str = "Auto";
+		else
+			str = r_softemu_mdl_warp.value ? "On" : "Off";
+		M_Print (x, y, str);
 		break;
 	case VID_OPT_FPSLIMIT:
 		M_Print (x, y, host_maxfps.value ? va("%i", (int)host_maxfps.value): "Off");
