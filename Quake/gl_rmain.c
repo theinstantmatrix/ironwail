@@ -80,6 +80,7 @@ cvar_t	r_simd = {"r_simd","1",CVAR_ARCHIVE};
 #endif
 cvar_t	r_alphasort = {"r_alphasort","1",CVAR_ARCHIVE};
 cvar_t	r_oit = {"r_oit","1",CVAR_ARCHIVE};
+cvar_t	r_dither = {"r_dither", "1.0", CVAR_ARCHIVE};
 
 cvar_t	gl_finish = {"gl_finish","0",CVAR_NONE};
 cvar_t	gl_clear = {"gl_clear","1",CVAR_NONE};
@@ -111,7 +112,6 @@ cvar_t	r_noshadow_list = {"r_noshadow_list", "progs/flame2.mdl,progs/flame.mdl,p
 extern cvar_t	r_vfog;
 extern cvar_t	vid_fsaa;
 //johnfitz
-extern cvar_t	r_softemu_dither;
 extern cvar_t	r_softemu_dither_screen;
 extern cvar_t	r_softemu_dither_texture;
 
@@ -334,7 +334,7 @@ void GL_PostProcess (void)
 	GL_BeginGroup ("Postprocess");
 
 	palidx =  GLPalette_Postprocess ();
-	dither = (softemu == SOFTEMU_FINE) ? NOISESCALE * r_softemu_dither.value * r_softemu_dither_screen.value : 0.f;
+	dither = (softemu == SOFTEMU_FINE) ? NOISESCALE * r_dither.value * r_softemu_dither_screen.value : 0.f;
 
 	GL_BindFramebufferFunc (GL_FRAMEBUFFER, 0);
 	glViewport (glx, gly, glwidth, glheight);
@@ -932,12 +932,12 @@ void R_SetupView (void)
 	r_framedata.time = cl.time;
 	if (softemu == SOFTEMU_FINE || softemu == SOFTEMU_COARSE)
 	{
-		r_framedata.screendither = NOISESCALE * r_softemu_dither.value * r_softemu_dither_screen.value;
-		r_framedata.texturedither = NOISESCALE * r_softemu_dither.value * r_softemu_dither_texture.value;
+		r_framedata.screendither = NOISESCALE * r_dither.value * r_softemu_dither_screen.value;
+		r_framedata.texturedither = NOISESCALE * r_dither.value * r_softemu_dither_texture.value;
 	}
 	else
 	{
-		r_framedata.screendither = 0.f;
+		r_framedata.screendither = r_dither.value * (1.f/255.f);
 		r_framedata.texturedither = 0.f;
 	}
 

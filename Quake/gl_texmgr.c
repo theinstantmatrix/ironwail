@@ -41,7 +41,6 @@ cvar_t			r_softemu = {"r_softemu", "0", CVAR_ARCHIVE};
 cvar_t			r_softemu_metric = {"r_softemu_metric", "-1", CVAR_ARCHIVE};
 cvar_t			r_softemu_lightmap_banding = {"r_softemu_lightmap_banding", "-1", CVAR_ARCHIVE};
 cvar_t			r_softemu_mdl_warp = {"r_softemu_mdl_warp", "-1", CVAR_ARCHIVE};
-cvar_t			r_softemu_dither = {"r_softemu_dither", "1.0", CVAR_ARCHIVE};
 cvar_t			r_softemu_dither_screen = {"r_softemu_dither_screen", "1.0", CVAR_ARCHIVE};
 cvar_t			r_softemu_dither_texture = {"r_softemu_dither_texture", "1.0", CVAR_ARCHIVE};
 
@@ -876,7 +875,6 @@ void TexMgr_Init (void)
 	Cvar_RegisterVariable (&r_softemu_lightmap_banding);
 	Cvar_SetCallback (&r_softemu_lightmap_banding, TexMgr_SoftEmu_f);
 	Cvar_RegisterVariable (&r_softemu_mdl_warp);
-	Cvar_RegisterVariable (&r_softemu_dither);
 	Cvar_RegisterVariable (&r_softemu_dither_screen);
 	Cvar_RegisterVariable (&r_softemu_dither_texture);
 	Cmd_AddCommand ("gl_describetexturemodes", &TexMgr_DescribeTextureModes_f);

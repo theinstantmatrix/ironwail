@@ -224,7 +224,7 @@ SOFTWARE.*/\
 "\n"\
 "#define DITHER_NOISE(uv) tri(bayer01(ivec2(uv)))\n"\
 "#define SCREEN_SPACE_NOISE() DITHER_NOISE(floor(gl_FragCoord.xy)+0.5)\n"\
-"#define SUPPRESS_BANDING() (bayer(ivec2(gl_FragCoord.xy)) * (1./255.))\n"\
+"#define SUPPRESS_BANDING() bayer(ivec2(gl_FragCoord.xy))\n"\
 
 ////////////////////////////////////////////////////////////////
 
@@ -731,7 +731,7 @@ OIT_OUTPUT (out_fragcolor)
 "	// nuke extra precision in 10-bit framebuffer\n"
 "	out_fragcolor.rgb = floor(out_fragcolor.rgb * 255. + 0.5) * (1./255.);\n"
 "#elif DITHER == 0\n"
-"	out_fragcolor.rgb += SUPPRESS_BANDING ();\n"
+"	out_fragcolor.rgb += SUPPRESS_BANDING() * ScreenDither;\n"
 "#endif\n"
 "}\n";
 
@@ -809,7 +809,7 @@ OIT_OUTPUT (out_fragcolor)
 "		out_fragcolor.rgb *= out_fragcolor.rgb;\n"
 "	}\n"
 "#else\n"
-"	out_fragcolor.rgb += SUPPRESS_BANDING();\n"
+"	out_fragcolor.rgb += SUPPRESS_BANDING() * ScreenDither;\n"
 "#endif\n"
 "}\n";
 
@@ -899,7 +899,7 @@ NOISE_FUNCTIONS
 "	result.rgb = mix(result.rgb, layer.rgb, layer.a);\n"
 "	result.rgb = mix(result.rgb, SkyFog.rgb, SkyFog.a);\n"
 "	out_fragcolor = result;\n"
-"	out_fragcolor.rgb += SUPPRESS_BANDING();\n"
+"	out_fragcolor.rgb += SUPPRESS_BANDING() * ScreenDither;\n"
 "}\n";
 
 ////////////////////////////////////////////////////////////////
@@ -966,7 +966,7 @@ NOISE_FUNCTIONS
 "	out_fragcolor.rgb += SCREEN_SPACE_NOISE() * ScreenDither;\n"
 "	out_fragcolor.rgb *= out_fragcolor.rgb;\n"
 "#else\n"
-"	out_fragcolor.rgb += SUPPRESS_BANDING();\n"
+"	out_fragcolor.rgb += SUPPRESS_BANDING() * ScreenDither;\n"
 "#endif\n"
 "}\n";
 
@@ -1018,7 +1018,7 @@ NOISE_FUNCTIONS
 "	out_fragcolor.rgb += SCREEN_SPACE_NOISE() * ScreenDither;\n"
 "	out_fragcolor.rgb *= out_fragcolor.rgb;\n"
 "#else\n"
-"	out_fragcolor.rgb += SUPPRESS_BANDING();\n"
+"	out_fragcolor.rgb += SUPPRESS_BANDING() * ScreenDither;\n"
 "#endif\n"
 "}\n";
 
@@ -1193,7 +1193,7 @@ OIT_OUTPUT (out_fragcolor)
 "		out_fragcolor.rgb *= out_fragcolor.rgb;\n"
 "	}\n"
 "#else\n"
-"	out_fragcolor.rgb += SUPPRESS_BANDING();\n"
+"	out_fragcolor.rgb += SUPPRESS_BANDING() * ScreenDither;\n"
 "#endif\n"
 "}\n";
 
@@ -1247,7 +1247,7 @@ NOISE_FUNCTIONS
 "		out_fragcolor.rgb *= out_fragcolor.rgb;\n"
 "	}\n"
 "#else\n"
-"	out_fragcolor.rgb += SUPPRESS_BANDING();\n"
+"	out_fragcolor.rgb += SUPPRESS_BANDING() * ScreenDither;\n"
 "#endif\n"
 "}\n";
 
@@ -1321,7 +1321,7 @@ OIT_OUTPUT (out_fragcolor)
 "		out_fragcolor.rgb *= out_fragcolor.rgb;\n"
 "	}\n"
 "#else\n"
-"	out_fragcolor.rgb += SUPPRESS_BANDING();\n"
+"	out_fragcolor.rgb += SUPPRESS_BANDING() * ScreenDither;\n"
 "#endif\n"
 "}\n";
 
