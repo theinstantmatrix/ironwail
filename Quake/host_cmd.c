@@ -2592,7 +2592,10 @@ static void Host_Loadgame_f (void)
 	q_strlcpy (mapname, com_token, sizeof(mapname));
 	data = COM_ParseFloatNewline (data, &time);
 
-	CL_Disconnect_f ();
+// Note: calling CL_Disconnect instead of CL_Disconnect_f to avoid stopping the music
+	CL_Disconnect ();
+	if (sv.active)
+		Host_ShutdownServer (false);
 
 	PR_SwitchQCVM(&sv.qcvm);
 	SV_SpawnServer (mapname);
