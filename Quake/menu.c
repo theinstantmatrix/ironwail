@@ -4568,6 +4568,9 @@ typedef struct
 	keydevicemask_t		devicemask;
 } menukeybind_t;
 
+#define QUICKSAVE "echo Quicksaving...; wait; save quick"
+#define QUICKLOAD "echo Quickloading...; wait; load quick"
+
 static const menukeybind_t menubinds[] =
 {
 	{"+forward",		"Move forward",			KDM_KEYBOARD_AND_MOUSE},
@@ -4602,6 +4605,14 @@ static const menukeybind_t menubinds[] =
 	{"impulse 8",		"Thunderbolt",			KDM_ANY},
 	{"impulse 225",		"Laser Cannon",			KDM_ANY},
 	{"impulse 226",		"Mjolnir",				KDM_ANY},
+	{"",				"",						KDM_ANY},
+	{QUICKSAVE,			"Quick save"	,		KDM_ANY},
+	{QUICKLOAD,			"Quick load"	,		KDM_ANY},
+	{"menu_load",		"Load menu"	,			KDM_ANY},
+	{"menu_save",		"Save menu"	,			KDM_ANY},
+	{"menu_maps",		"Maps menu"	,			KDM_ANY},
+	{"menu_options",	"Options menu"	,		KDM_ANY},
+	{"screenshot",		"Screenshot",			KDM_ANY},
 };
 
 #define	NUMCOMMANDS		Q_COUNTOF(menubinds)
@@ -4647,15 +4658,17 @@ static qboolean M_Keys_Match (int index)
 
 static void M_Keys_Populate (void)
 {
-	int i, limit;
+	int i;
 
 	VEC_CLEAR (keysmenu.items);
 
-	limit = hipnotic ? NUMCOMMANDS : NUMCOMMANDS - 2;
-	for (i = 0; i < limit; i++)
+	for (i = 0; i < NUMCOMMANDS; i++)
 	{
 		// filter item by device type
 		if (!(keysmenu.devicemask & menubinds[i].devicemask))
+			continue;
+
+		if (!hipnotic && (strcmp (menubinds[i].command, "impulse 225") == 0 || strcmp (menubinds[i].command, "impulse 226") == 0))
 			continue;
 
 		// if we have two separators in a row, overwrite the old one
