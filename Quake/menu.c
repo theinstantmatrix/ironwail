@@ -4606,12 +4606,12 @@ static const menukeybind_t menubinds[] =
 	{"impulse 225",		"Laser Cannon",			KDM_ANY},
 	{"impulse 226",		"Mjolnir",				KDM_ANY},
 	{"",				"",						KDM_ANY},
-	{QUICKSAVE,			"Quick save"	,		KDM_ANY},
-	{QUICKLOAD,			"Quick load"	,		KDM_ANY},
-	{"menu_load",		"Load menu"	,			KDM_ANY},
-	{"menu_save",		"Save menu"	,			KDM_ANY},
-	{"menu_maps",		"Maps menu"	,			KDM_ANY},
-	{"menu_options",	"Options menu"	,		KDM_ANY},
+	{QUICKSAVE,			"Quick save",			KDM_ANY},
+	{QUICKLOAD,			"Quick load",			KDM_ANY},
+	{"menu_load",		"Load menu",			KDM_ANY},
+	{"menu_save",		"Save menu",			KDM_ANY},
+	{"menu_maps",		"Maps menu",			KDM_ANY},
+	{"menu_options",	"Options menu",			KDM_ANY},
 	{"screenshot",		"Screenshot",			KDM_ANY},
 };
 
