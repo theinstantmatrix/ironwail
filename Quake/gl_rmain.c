@@ -930,14 +930,19 @@ void R_SetupView (void)
 	r_framedata.eyepos[1] = r_refdef.vieworg[1];
 	r_framedata.eyepos[2] = r_refdef.vieworg[2];
 	r_framedata.time = cl.time;
-	if (softemu == SOFTEMU_FINE || softemu == SOFTEMU_COARSE)
+	if (softemu == SOFTEMU_COARSE)
 	{
 		r_framedata.screendither = NOISESCALE * r_dither.value * r_softemu_dither_screen.value;
 		r_framedata.texturedither = NOISESCALE * r_dither.value * r_softemu_dither_texture.value;
 	}
-	else
+	else if (softemu == SOFTEMU_OFF)
 	{
 		r_framedata.screendither = r_dither.value * (1.f/255.f);
+		r_framedata.texturedither = 0.f;
+	}
+	else // FINE (screen-space dithering applied during postprocessing), or BANDED (no dithering)
+	{
+		r_framedata.screendither = 0.f;
 		r_framedata.texturedither = 0.f;
 	}
 
