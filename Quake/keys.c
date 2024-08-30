@@ -1314,7 +1314,7 @@ void Key_EventWithKeycode (int key, qboolean down, int keycode)
 	}
 
 // if not a consolekey, send to the interpreter no matter what mode is
-	if ((key_dest == key_menu && menubound[key]) ||
+	if ((key_dest == key_menu && menubound[key] && !M_KeyBinding ()) ||
 	    (key_dest == key_console && !consolekeys[key]) ||
 	    (key_dest == key_game && (!con_forcedup || !consolekeys[key])))
 	{
