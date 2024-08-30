@@ -2364,9 +2364,8 @@ void Con_DrawConsole (int lines, qboolean drawinput)
 		Con_DrawInput ();
 
 //draw version number in bottom right
-	y += 8;
 	text = CONSOLE_TITLE_STRING;
-	M_PrintWhite (vid.conwidth - (strlen (text) << 3), y, text);
+	M_PrintWhite (vid.conwidth - (strlen (text) << 3), vid.conheight - 8, text);
 }
 
 
