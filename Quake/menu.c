@@ -37,12 +37,16 @@ extern cvar_t cl_gun_fovscale;
 extern cvar_t v_gunkick;
 extern cvar_t cl_bob;
 extern cvar_t cl_rollangle;
+extern cvar_t cl_maxpitch;
+extern cvar_t cl_minpitch;
 extern cvar_t sv_autoload;
 extern cvar_t r_particles;
 extern cvar_t gl_texturemode;
 extern cvar_t gl_texture_anisotropy;
 extern cvar_t host_maxfps;
 extern cvar_t scr_showfps;
+extern cvar_t scr_showspeed;
+extern cvar_t scr_clock;
 extern cvar_t vid_width;
 extern cvar_t vid_height;
 extern cvar_t vid_refreshrate;
@@ -59,6 +63,7 @@ extern cvar_t r_alphasort;
 extern cvar_t r_md5;
 extern cvar_t r_lerpmodels;
 extern cvar_t r_lerpmove;
+extern cvar_t snd_waterfx;
 extern cvar_t joy_deadzone_look;
 extern cvar_t joy_deadzone_move;
 extern cvar_t joy_deadzone_trigger;
@@ -1155,6 +1160,25 @@ void M_ToggleMenu_f (void)
 	}
 }
 
+/*
+================
+M_GetBaseState
+================
+*/
+static enum m_state_e M_GetBaseState (enum m_state_e state)
+{
+	switch (state)
+	{
+	case m_video:
+	case m_graphics:
+	case m_gamepad:
+	case m_interface:
+	case m_game:
+		return m_options;
+	default:
+		return state;
+	}
+}
 
 //=============================================================================
 /* MAIN MENU */
@@ -3199,142 +3223,189 @@ void M_Menu_Gamepad_f (void)
 //=============================================================================
 /* OPTIONS MENU */
 
-////////////////////////////////////////////////////
-#define OPTIONS_LIST(def)							\
-	def (OPT_VIDEO,			"Video Options")		\
-	def (OPT_CUSTOMIZE,		"Controls")				\
-	def (OPT_GAMEPAD,		"Gamepad")				\
-	def (OPT_MODS,			"Mods")					\
-	def (OPT_CONSOLE,		"Go To Console")		\
-	def (OPT_DEFAULTS,		"Reset Config")			\
-													\
-	def (OPT_SPACE1,		"")						\
-													\
-	def (OPT_GAMMA,			"Brightness")			\
-	def (OPT_CONTRAST,		"Contrast")				\
-	def (OPT_SCALE,			"UI Scale")				\
-	def (OPT_PIXELASPECT,	"UI Pixels")			\
-	def (OPT_UIMOUSE,		"UI Mouse")				\
-	def (OPT_HUDSTYLE,		"HUD")					\
-	def (OPT_SBALPHA,		"HUD Alpha")			\
-	def (OPT_HUDLEVEL,		"HUD Detail")			\
-	def (OPT_CROSSHAIR,		"Crosshair")			\
-													\
-	def (OPT_SPACE2,		"")						\
-													\
-	def (OPT_MOUSESPEED,	"Mouse Speed")			\
-	def (OPT_INVMOUSE,		"Invert Mouse")			\
-	def (OPT_ALWAYSMLOOK,	"Mouse Look")			\
-	def (OPT_FOV,			"Field Of View")		\
-	def (OPT_FOVDISTORT,	"Gun Distortion")		\
-	def (OPT_RECOIL,		"Recoil")				\
-	def (OPT_VIEWBOB,		"View Bob")				\
-	def (OPT_ALWAYRUN,		"Always Run")			\
-													\
-	def (OPT_SPACE3,		"")						\
-													\
-	def (OPT_SNDVOL,		"Sound Volume")			\
-	def (OPT_MUSICVOL,		"Music Volume")			\
-	def (OPT_MUSICEXT,		"External Music")		\
-////////////////////////////////////////////////////
-#define VIDEO_OPTIONS_LIST(def)						\
-	def (VID_OPT_RESOLUTION,	"Resolution")		\
-	def (VID_OPT_DISPLAYMODE,	"Display Mode")		\
-	def (VID_OPT_REFRESHRATE,	"Refresh Rate")		\
-	def (VID_OPT_TEST,			"Test changes")		\
-	def (VID_OPT_APPLY,			"Apply changes")	\
-													\
-	def (VID_OPT_SPACE1,		"")					\
-													\
-	def (VID_OPT_VSYNC,			"Vertical Sync")	\
-	def (VID_OPT_FSAA,			"Antialiasing")		\
-	def (VID_OPT_FSAA_MODE,		"AA Mode")			\
-	def (VID_OPT_SCALE,			"Render Scale")		\
-	def (VID_OPT_ANISO,			"Anisotropic")		\
-	def (VID_OPT_TEXFILTER,		"Textures")			\
-	def (VID_OPT_MD5,			"Models")			\
-	def (VID_OPT_ANIMLERP,		"Animations")		\
-	def (VID_OPT_PARTICLES,		"Particles")		\
-	def (VID_OPT_ALPHAMODE,		"Transparency")		\
-	def (VID_OPT_WATERWARP,		"Underwater FX")	\
-	def (VID_OPT_DLIGHTS,		"Dynamic Lights")	\
-	def (VID_OPT_SOFTEMU,		"8-bit Mode")		\
-	def (VID_OPT_SOFTEMU_MDL,	"Model Warping")	\
-	def (VID_OPT_FPSLIMIT,		"FPS Limit")		\
-	def (VID_OPT_SHOWFPS,		"Show FPS")			\
-////////////////////////////////////////////////////
-#define GPAD_OPTIONS_LIST(def)						\
-	def(GPAD_OPT_DEVICE,		"Gamepad")			\
-													\
-	def(GPAD_OPT_SPACE1,		"")					\
-	def(GPAD_OPT_SPACE2,		"")					\
-													\
-	def(GPAD_OPT_SENSX,			"Yaw Speed")		\
-	def(GPAD_OPT_SENSY,			"Pitch Speed")		\
-	def(GPAD_OPT_INVERT,		"Invert Pitch")		\
-	def(GPAD_OPT_SWAP_MOVELOOK,	"Look Stick")		\
-													\
-	def(GPAD_OPT_SPACE3,		"")					\
-													\
-	def(GPAD_OPT_EXPONENT_LOOK,	"Look Accel")		\
-	def(GPAD_OPT_EXPONENT_MOVE,	"Move Accel")		\
-													\
-	def(GPAD_OPT_SPACE4,		"")					\
-													\
-	def(GPAD_OPT_DEADZONE_LOOK,	"Look Deadzone")	\
-	def(GPAD_OPT_DEADZONE_MOVE,	"Move Deadzone")	\
-	def(GPAD_OPT_DEADZONE_TRIG,	"Trigger Thresh")	\
-													\
-	def(GPAD_OPT_SPACE5,		"")					\
-													\
-	def(GPAD_OPT_RUMBLE,		"Vibration")		\
-													\
-	def(GPAD_OPT_SPACE6,		"")					\
-													\
-	def(GPAD_OPT_GYROENABLE,	"Gyro")				\
-	def(GPAD_OPT_FLICKSTICK,	"Flick Stick")		\
-	def(GPAD_OPT_GYROMODE,		"Gyro Button")		\
-	def(GPAD_OPT_GYROAXIS,		"Gyro Axis")		\
-	def(GPAD_OPT_GYROSENSX,		"Gyro Yaw Speed")	\
-	def(GPAD_OPT_GYROSENSY,		"Gyro Pitch Speed")	\
-	def(GPAD_OPT_GYRONOISE,		"Gyro Noise Thresh")\
-	def(GPAD_OPT_CALIBRATE,		"Calibrate")		\
-////////////////////////////////////////////////////
+#define PP_CONCAT2(a,b)		a##b
+#define PP_CONCAT(a,b)		PP_CONCAT2 (a, b)
+#define SPACER				PP_CONCAT (_SPACER_, __COUNTER__)
 
-enum
+////////////////////////////////////////////////////////////////////////
+#define OPTIONS_LIST(begin_menu, item, end_menu)						\
+	begin_menu (OPTIONS, m_options, "")									\
+		item (OPT_GAMMA,				"Brightness")					\
+		item (OPT_CONTRAST,				"Contrast")						\
+		item (OPT_VIDEO,				"Display")						\
+		item (OPT_GRAPHICS,				"Graphics")						\
+		item (OPT_INTERFACE,			"Interface")					\
+		item (SPACER,					"")								\
+		item (OPT_CUSTOMIZE,			"Key Setup")					\
+		item (OPT_GAMEPAD,				"Gamepad")						\
+		item (OPT_MOUSESPEED,			"Mouse Speed")					\
+		item (OPT_INVMOUSE,				"Invert Mouse")					\
+		item (OPT_SNDVOL,				"Sound Volume")					\
+		item (OPT_MUSICVOL,				"Music Volume")					\
+		item (OPT_GAME,					"Game")							\
+		item (OPT_MODS,					"Mods")							\
+		item (SPACER,					"")								\
+		item (OPT_CONSOLE,				"Console")						\
+		item (OPT_DEFAULTS,				"Reset All")					\
+	end_menu ()															\
+	begin_menu (VIDEO_OPTIONS, m_video, "Display Options")				\
+		item (OPT_RESOLUTION,			"Resolution")					\
+		item (OPT_DISPLAYMODE,			"Display Mode")					\
+		item (OPT_REFRESHRATE,			"Refresh Rate")					\
+		item (OPT_TEST_VIDEO,			"Test changes")					\
+		item (OPT_APPLY_VIDEO,			"Apply changes")				\
+		item (SPACER,					"")								\
+		item (OPT_VSYNC,				"Vertical Sync")				\
+		item (OPT_FPSLIMIT,				"FPS Limit")					\
+	end_menu ()															\
+	begin_menu (GRAPHICS_OPTIONS, m_graphics, "Graphics Options")		\
+		item (OPT_SOFTEMU,				"8-bit Mode")					\
+		item (OPT_SOFTEMU_MDL,			"Model Warping")				\
+		item (OPT_MD5,					"Models")						\
+		item (OPT_ANIMLERP,				"Animations")					\
+		item (OPT_TEXFILTER,			"Textures")						\
+		item (OPT_ANISO,				"Anisotropic")					\
+		item (SPACER,					"")								\
+		item (OPT_RENDERSCALE,			"Render Scale")					\
+		item (OPT_FSAA,					"Antialiasing")					\
+		item (OPT_FSAA_MODE,			"AA Mode")						\
+		item (SPACER,					"")								\
+		item (OPT_ALPHAMODE,			"Transparency")					\
+		item (OPT_PARTICLES,			"Particles")					\
+		item (OPT_WATERWARP,			"Underwater FX")				\
+		item (OPT_DLIGHTS,				"Dynamic Lights")				\
+	end_menu ()															\
+	begin_menu (INTERFACE_OPTIONS, m_interface, "Interface Options")	\
+		item (OPT_UISCALE,				"Scale")						\
+		item (OPT_PIXELASPECT,			"Pixels")						\
+		item (OPT_UIMOUSE,				"Mouse")						\
+		item (SPACER,					"")								\
+		item (OPT_HUDSTYLE,				"HUD")							\
+		item (OPT_SBALPHA,				"HUD Alpha")					\
+		item (OPT_HUDLEVEL,				"HUD Detail")					\
+		item (OPT_CROSSHAIR,			"Crosshair")					\
+		item (OPT_SHOWSPEED,			"Show Speed")					\
+		item (OPT_SHOWTIME,				"Show Time")					\
+		item (OPT_SHOWFPS,				"Show FPS")						\
+		item (SPACER,					"")								\
+		item (OPT_MENUBGSTYLE,			"Menu BG")						\
+		item (OPT_MENUBGALPHA,			"Menu BG Alpha")				\
+		item (OPT_CONALPHA,				"Console Alpha")				\
+		item (OPT_CONBRIGHTNESS,		"Darken Console")				\
+		item (OPT_CONFIRMQUIT,			"Quit Prompt")					\
+		item (OPT_STARTDEMOS,			"Start Demos")					\
+	end_menu ()															\
+	begin_menu (GAMEPAD_OPTIONS, m_gamepad, "Gamepad Options")			\
+		item (GPAD_OPT_DEVICE,			"Gamepad")						\
+		item (SPACER,					"")								\
+		item (SPACER,					"")								\
+		item (GPAD_OPT_SENSX,			"Yaw Speed")					\
+		item (GPAD_OPT_SENSY,			"Pitch Speed")					\
+		item (GPAD_OPT_INVERT,			"Invert Pitch")					\
+		item (GPAD_OPT_SWAP_MOVELOOK,	"Look Stick")					\
+		item (SPACER,					"")								\
+		item (GPAD_OPT_EXPONENT_LOOK,	"Look Accel")					\
+		item (GPAD_OPT_EXPONENT_MOVE,	"Move Accel")					\
+		item (SPACER,					"")								\
+		item (GPAD_OPT_DEADZONE_LOOK,	"Look Deadzone")				\
+		item (GPAD_OPT_DEADZONE_MOVE,	"Move Deadzone")				\
+		item (GPAD_OPT_DEADZONE_TRIG,	"Trigger Thresh")				\
+		item (SPACER,					"")								\
+		item (GPAD_OPT_RUMBLE,			"Vibration")					\
+		item (SPACER,					"")								\
+		item (GPAD_OPT_GYROENABLE,		"Gyro")							\
+		item (GPAD_OPT_FLICKSTICK,		"Flick Stick")					\
+		item (GPAD_OPT_GYROMODE,		"Gyro Button")					\
+		item (GPAD_OPT_GYROAXIS,		"Gyro Axis")					\
+		item (GPAD_OPT_GYROSENSX,		"Gyro Yaw Speed")				\
+		item (GPAD_OPT_GYROSENSY,		"Gyro Pitch Speed")				\
+		item (GPAD_OPT_GYRONOISE,		"Gyro Noise Thresh")			\
+		item (GPAD_OPT_CALIBRATE,		"Calibrate")					\
+	end_menu ()															\
+	begin_menu (GAME_OPTIONS, m_game, "Game Options")					\
+		item (OPT_FOV,					"Field Of View")				\
+		item (OPT_FOVDISTORT,			"Gun Distortion")				\
+		item (OPT_RECOIL,				"Recoil")						\
+		item (OPT_VIEWBOB,				"View Bob")						\
+		item (OPT_ANGLELIMITS,			"Angle Limits")					\
+		item (OPT_ALWAYSRUN,			"Always Run")					\
+		item (SPACER,					"")								\
+		item (OPT_ALWAYSMLOOK,			"Mouse Look")					\
+		item (OPT_LOOKSTRAFE,			"Look Strafe")					\
+		item (OPT_LOOKSPRING,			"Look Spring")					\
+		item (SPACER,					"")								\
+		item (OPT_MUSICEXT,				"External Music")				\
+		item (OPT_WATERSNDFX,			"Water Muffling")				\
+	end_menu ()															\
+////////////////////////////////////////////////////////////////////////
+
+#define PP_IGNORE_ARGS(...)
+
+enum 
 {
-	#define ADD_OPTION_ENUM(id, name) id,
-	OPTIONS_LIST (ADD_OPTION_ENUM)
-	VIDEO_OPTIONS_LIST(ADD_OPTION_ENUM)
-	GPAD_OPTIONS_LIST(ADD_OPTION_ENUM)
+	// Add option id's and BEGIN values
+	#define BEGIN_MENU_OPT(prefix, state, desc)		prefix##_BEGIN, _##prefix##_REWIND = prefix##_BEGIN - 1,
+	#define ADD_OPTION_ENUM(id, name)				id,
+	OPTIONS_LIST (BEGIN_MENU_OPT, ADD_OPTION_ENUM, PP_IGNORE_ARGS)
 	#undef ADD_OPTION_ENUM
+	#undef BEGIN_MENU_OPT
 
-	#define COUNT_OPTION(id, name) +1
-	OPTIONS_FIRST			= 0,
-	OPTIONS_ITEMS			= OPTIONS_LIST (COUNT_OPTION),
-	VIDEO_OPTIONS_FIRST		= OPTIONS_ITEMS,
-	VIDEO_OPTIONS_ITEMS		= VIDEO_OPTIONS_LIST (COUNT_OPTION),
-	GPAD_OPTIONS_FIRST		= OPTIONS_ITEMS + VIDEO_OPTIONS_ITEMS,
-	GPAD_OPTIONS_ITEMS		= GPAD_OPTIONS_LIST (COUNT_OPTION),
+	// Add END values
+	#define ADD_END_VALUE(prefix, state, desc)		prefix##_END = prefix##_BEGIN
+	#define COUNT_OPTION(id, name)					+1
+	#define ADD_COMMA()								,
+	OPTIONS_LIST(ADD_END_VALUE, COUNT_OPTION, ADD_COMMA)
+	#undef ADD_END_VALUE
 	#undef COUNT_OPTION
+	#undef ADD_COMMA
 
-	GYRO_OPTIONS_FIRST		= GPAD_OPT_GYROENABLE,
-	GYRO_OPTIONS_ITEMS		= GPAD_OPTIONS_FIRST + GPAD_OPTIONS_ITEMS - GYRO_OPTIONS_FIRST,
+	// Add NUMITEMS values
+	#define ADD_NUMITEMS(prefix, state, desc)		prefix##_NUMITEMS = prefix##_END - prefix##_BEGIN,
+	OPTIONS_LIST(ADD_NUMITEMS, PP_IGNORE_ARGS, PP_IGNORE_ARGS)
+	#undef ADD_NUMITEMS
+
+	// Gyro sub-range
+	GYRO_OPTIONS_BEGIN			= GPAD_OPT_GYROENABLE,
+	GYRO_OPTIONS_END			= GPAD_OPT_CALIBRATE + 1,
+	GYRO_OPTIONS_NUMITEMS		= GYRO_OPTIONS_END - GYRO_OPTIONS_BEGIN,
 };
-
-static qboolean M_Options_IsGyroId (int id)
-{
-	return (unsigned int)(id - GYRO_OPTIONS_FIRST) < GYRO_OPTIONS_ITEMS;
-}
 
 static const char *const options_names[] =
 {
 	#define ADD_OPTION_NAME(id, name) name,
-	OPTIONS_LIST (ADD_OPTION_NAME)
-	VIDEO_OPTIONS_LIST(ADD_OPTION_NAME)
-	GPAD_OPTIONS_LIST(ADD_OPTION_NAME)
+	OPTIONS_LIST (PP_IGNORE_ARGS, ADD_OPTION_NAME, PP_IGNORE_ARGS)
 	#undef ADD_OPTION_NAME
 };
+
+typedef struct
+{
+	const char*		description;
+	enum m_state_e	state;
+	int				first_item;
+	int				num_items;
+} optsubmenu_t;
+
+static const optsubmenu_t options_submenus[] =
+{
+	#define ADD_SUBMENU(prefix, state, desc)			{desc, state, prefix##_BEGIN, prefix##_NUMITEMS},
+	OPTIONS_LIST (ADD_SUBMENU, PP_IGNORE_ARGS, PP_IGNORE_ARGS)
+	#undef ADD_SUBMENU
+};
+
+static int M_Options_FindSubmenu (enum m_state_e state)
+{
+	int i;
+	for (i = 0; i < (int) Q_COUNTOF (options_submenus); i++)
+		if (options_submenus[i].state == state)
+			return i;
+	Sys_Error ("M_Options_FindSubmenu: invalid index %d", state);
+	return -1;
+}
+
+static qboolean M_Options_IsGyroId (int id)
+{
+	return (unsigned int)(id - GYRO_OPTIONS_BEGIN) < GYRO_OPTIONS_NUMITEMS;
+}
 
 enum
 {
@@ -3359,9 +3430,8 @@ struct
 	int				yofs;
 	const char		*subtitle;
 	int				first_item;
-	int				options_cursor;
-	int				video_cursor;
-	int				gamepad_cursor;
+
+	int				submenu_cursors[Q_COUNTOF (options_submenus)];
 	int				*last_cursor;
 } optionsmenu;
 
@@ -3370,10 +3440,11 @@ float target_scale_frac;
 
 void M_Options_SelectMods (void)
 {
+	SDL_assert (options_submenus[0].state == m_options);
 	if (m_state == m_options)
 		optionsmenu.list.cursor = OPT_MODS;
 	else
-		optionsmenu.options_cursor = OPT_MODS;
+		optionsmenu.submenu_cursors[0] = OPT_MODS;
 }
 
 static void M_Options_UpdateLayout (void)
@@ -3388,9 +3459,14 @@ static void M_Options_UpdateLayout (void)
 		optionsmenu.yofs = 0;
 
 	height = OPTIONS_LISTOFS + optionsmenu.yofs + optionsmenu.list.numitems * 8;
+
+	// Shift items down a bit if the total height is really small
+	optionsmenu.yofs += (q_max (0, 144 - height) / 3) & ~7;
+
 	// Enforce a minimum height, so that if the number of items is relatively small
 	// the title pic doesn't get drawn below its usual position
 	height = q_max (height, 192);
+
 	if (height <= m_height)
 	{
 		optionsmenu.y = (m_top + (m_height - height) / 2) & ~7;
@@ -3418,7 +3494,7 @@ static qboolean M_Options_IsEnabled (int index)
 	index += optionsmenu.first_item;
 	if ((unsigned int) index >= countof (options_names))
 		return false;
-	if (index > GPAD_OPTIONS_FIRST && index < GPAD_OPTIONS_FIRST + GPAD_OPTIONS_ITEMS && !IN_HasGamepad ())
+	if (index > GAMEPAD_OPTIONS_BEGIN && index < GAMEPAD_OPTIONS_END && !IN_HasGamepad ())
 		return false;
 	if (index == GPAD_OPT_RUMBLE && !IN_HasRumble ())
 		return false;
@@ -3426,7 +3502,7 @@ static qboolean M_Options_IsEnabled (int index)
 	{
 		if (!IN_HasGyro ())
 			return false;
-		if (!gyro_enable.value && index > GYRO_OPTIONS_FIRST)
+		if (!gyro_enable.value && index > GYRO_OPTIONS_BEGIN)
 			return false;
 	}
 	return true;
@@ -3454,43 +3530,27 @@ static qboolean M_Options_Match (int index)
 
 void M_Options_Init (enum m_state_e state)
 {
+	int submenu = M_Options_FindSubmenu (state);
+
 	IN_DeactivateForMenu();
 	key_dest = key_menu;
 	m_state = state;
 	m_entersound = true;
 	slider_grab = false;
 
-	if (state == m_options)
+	if (state == m_video)
 	{
-		optionsmenu.first_item = OPTIONS_FIRST;
-		optionsmenu.list.numitems = OPTIONS_ITEMS;
-		optionsmenu.last_cursor = &optionsmenu.options_cursor;
-		optionsmenu.subtitle = "";
-	}
-	else if (state == m_video)
-	{
-		optionsmenu.first_item = VIDEO_OPTIONS_FIRST;
-		optionsmenu.list.numitems = VIDEO_OPTIONS_ITEMS;
-		optionsmenu.last_cursor = &optionsmenu.video_cursor;
-		optionsmenu.subtitle = "Video Options";
-
 		//set all the cvars to match the current mode when entering the menu
 		VID_SyncCvars ();
 
 		//set up rate list based on current cvars
 		VID_Menu_RebuildRateList ();
 	}
-	else if (state == m_gamepad)
-	{
-		optionsmenu.first_item = GPAD_OPTIONS_FIRST;
-		optionsmenu.list.numitems = GPAD_OPTIONS_ITEMS;
-		optionsmenu.last_cursor = &optionsmenu.gamepad_cursor;
-		optionsmenu.subtitle = "Gamepad Options";
-	}
-	else
-	{
-		Sys_Error ("M_Options_Init: invalid state %d", state);
-	}
+
+	optionsmenu.first_item = options_submenus[submenu].first_item;
+	optionsmenu.list.numitems = options_submenus[submenu].num_items;
+	optionsmenu.last_cursor = &optionsmenu.submenu_cursors[submenu];
+	optionsmenu.subtitle = options_submenus[submenu].description;
 
 	optionsmenu.list.cursor = *optionsmenu.last_cursor;
 	optionsmenu.list.isactive_fn = M_Options_IsSelectable;
@@ -3568,7 +3628,7 @@ void M_AdjustSliders (int dir)
 
 	switch (M_Options_GetSelected ())
 	{
-	case OPT_SCALE:	// console and menu scale
+	case OPT_UISCALE:	// console and menu scale
 		l = ((vid.width + 31) / 32) / 10.0;
 		f = scr_conscale.value + dir * .1;
 		if (f < 1)	f = 1;
@@ -3632,12 +3692,15 @@ void M_AdjustSliders (int dir)
 		else if (f > 1)	f = 1;
 		Cvar_SetValue ("volume", f);
 		break;
+	case OPT_WATERSNDFX:
+		Cbuf_AddText ("toggle snd_waterfx\n");
+		break;
 
 	case OPT_HUDSTYLE:	// hud style
 		Cvar_SetValueQuick (&scr_hudstyle, ((int) q_max (scr_hudstyle.value, 0.f) + (int) HUD_COUNT + dir) % (int) HUD_COUNT);
 		break;
 
-	case OPT_ALWAYRUN:	// always run
+	case OPT_ALWAYSRUN:	// always run
 		if (cl_alwaysrun.value)
 			curr_alwaysrun = ALWAYSRUN_QUAKESPASM;
 		else if (cl_forwardspeed.value > 200)
@@ -3680,6 +3743,19 @@ void M_AdjustSliders (int dir)
 		}
 		break;
 
+	case OPT_ANGLELIMITS:	// pitch limits
+		if (cl_maxpitch.value < 90.f)
+		{
+			Cvar_SetValueQuick (&cl_maxpitch, 90.f);
+			Cvar_SetValueQuick (&cl_minpitch, -90.f);
+		}
+		else
+		{
+			Cvar_SetValueQuick (&cl_maxpitch, 80.f);
+			Cvar_SetValueQuick (&cl_minpitch, -70.f);
+		}
+		break;
+
 	case OPT_RECOIL:	// gun kick
 		Cvar_SetValueQuick (&v_gunkick, ((int) q_max (v_gunkick.value, 0.f) + 3 + dir) % 3);
 		break;
@@ -3708,66 +3784,100 @@ void M_AdjustSliders (int dir)
 		}
 		break;
 
+	case OPT_LOOKSTRAFE:
+		Cvar_SetValueQuick (&lookstrafe, !lookstrafe.value);
+		break;
+
+	case OPT_LOOKSPRING:
+		Cvar_SetValueQuick (&lookspring, !lookspring.value);
+		break;
+
+	case OPT_CONFIRMQUIT:
+		M_CycleCvar (&cl_confirmquit, 0, 2, dir);
+		break;
+
+	case OPT_STARTDEMOS:
+		Cbuf_AddText ("toggle cl_startdemos\n");
+		break;
+
 	//
 	// Video options
 	//
-	case VID_OPT_RESOLUTION:
+	case OPT_RESOLUTION:
 		VID_Menu_ChooseNextResolution (-dir);
 		break;
-	case VID_OPT_REFRESHRATE:
+	case OPT_REFRESHRATE:
 		VID_Menu_ChooseNextRate (-dir);
 		break;
-	case VID_OPT_DISPLAYMODE:
+	case OPT_DISPLAYMODE:
 		VID_Menu_ChooseNextDisplayMode (-dir);
 		break;
-	case VID_OPT_VSYNC:
+	case OPT_VSYNC:
 		Cbuf_AddText ("toggle vid_vsync\n"); // kristian
 		break;
-	case VID_OPT_FSAA:
+	case OPT_FSAA:
 		VID_Menu_ChooseNextAA (-dir);
 		break;
-	case VID_OPT_FSAA_MODE:
+	case OPT_FSAA_MODE:
 		Cbuf_AddText ("toggle vid_fsaamode\n");
 		break;
-	case VID_OPT_SCALE:
+	case OPT_RENDERSCALE:
 		VID_Menu_ChooseNextScale (-dir);
 		break;
-	case VID_OPT_ANISO:
+	case OPT_ANISO:
 		VID_Menu_ChooseNextAnisotropy (-dir);
 		break;
-	case VID_OPT_TEXFILTER:
+	case OPT_TEXFILTER:
 		VID_Menu_ChooseNextTexFilter ();
 		break;
-	case VID_OPT_MD5:
+	case OPT_MD5:
 		Cbuf_AddText ("toggle r_md5\n");
 		break;
-	case VID_OPT_ANIMLERP:
+	case OPT_ANIMLERP:
 		Cvar_SetValueQuick (&r_lerpmodels, !r_lerpmove.value);
 		Cvar_SetValueQuick (&r_lerpmove, !r_lerpmove.value);
 		break;
-	case VID_OPT_PARTICLES:
+	case OPT_PARTICLES:
 		Cvar_SetValueQuick (&r_particles, (int)(q_max (r_particles.value, 0.f) + 3 + dir) % 3);
 		break;
-	case VID_OPT_WATERWARP:
+	case OPT_WATERWARP:
 		Cvar_SetValueQuick (&r_waterwarp, (int)(q_max (r_waterwarp.value, 0.f) + 3 + dir) % 3);
 		break;
-	case VID_OPT_ALPHAMODE:
+	case OPT_ALPHAMODE:
 		VID_Menu_ChooseNextAlphaMode (dir);
 		break;
-	case VID_OPT_DLIGHTS:
+	case OPT_DLIGHTS:
 		Cbuf_AddText ("toggle r_dynamic\n");
 		break;
-	case VID_OPT_SOFTEMU:
+	case OPT_SOFTEMU:
 		Cvar_SetValueQuick (&r_softemu, (int)(q_max (r_softemu.value, 0.f) + 4 + dir) % 4);
 		break;
-	case VID_OPT_SOFTEMU_MDL:
+	case OPT_SOFTEMU_MDL:
 		M_CycleCvar (&r_softemu_mdl_warp, -1, 1, dir);
 		break;
-	case VID_OPT_FPSLIMIT:
+	case OPT_FPSLIMIT:
 		VID_Menu_ChooseNextFPSLimit (-dir);
 		break;
-	case VID_OPT_SHOWFPS:
+	case OPT_SHOWFPS:
 		Cbuf_AddText ("toggle scr_showfps\n");
+		break;
+	case OPT_SHOWSPEED:
+		Cbuf_AddText ("toggle scr_showspeed\n");
+		break;
+	case OPT_SHOWTIME:
+		Cbuf_AddText ("toggle scr_clock\n");
+		break;
+	case OPT_MENUBGSTYLE:
+		M_CycleCvar (&scr_menubgstyle, -1, 3, dir);
+		break;
+	case OPT_MENUBGALPHA:
+		Cvar_SetValueQuick (&scr_menubgalpha, CLAMP (0.0f, scr_menubgalpha.value - dir * 0.1f, 1.f));
+		break;
+	case OPT_CONALPHA:
+		Cvar_SetValueQuick (&scr_conalpha, CLAMP (0.0f, scr_conalpha.value - dir * 0.1f, 1.f));
+		break;
+	case OPT_CONBRIGHTNESS:
+		Cvar_SetValueQuick (&scr_conbrightness, CLAMP (0.0f, scr_conbrightness.value - dir * 0.1f, 1.f));
 		break;
 
 	//
@@ -3904,7 +4014,7 @@ qboolean M_SetSliderValue (int option, float f)
 
 	switch (option)
 	{
-	case OPT_SCALE:	// console and menu scale
+	case OPT_UISCALE:	// console and menu scale
 		target_scale_frac = f;
 		l = (vid.width / 320.0) - 1;
 		f = l > 0 ? f * l + 1 : 0;
@@ -3941,6 +4051,15 @@ qboolean M_SetSliderValue (int option, float f)
 	case OPT_SBALPHA:	// statusbar alpha
 		f = 1.f - f;
 		Cvar_SetValue ("scr_sbaralpha", f);
+		return true;
+	case OPT_MENUBGALPHA:
+		Cvar_SetValueQuick (&scr_menubgalpha, 1.f - f);
+		return true;
+	case OPT_CONALPHA:
+		Cvar_SetValueQuick (&scr_conalpha, 1.f - f);
+		return true;
+	case OPT_CONBRIGHTNESS:
+		Cvar_SetValueQuick (&scr_conbrightness, 1.f - f);
 		return true;
 	case OPT_MUSICVOL:	// music volume
 		Cvar_SetValue ("bgmvolume", f);
@@ -4023,8 +4142,8 @@ void M_ReleaseSliderGrab (void)
 		return;
 	slider_grab = false;
 	M_ThrottledSound ("misc/menu1.wav");
-	if (M_Options_GetSelected () == OPT_SCALE)
-		M_SetSliderValue (OPT_SCALE, target_scale_frac);
+	if (M_Options_GetSelected () == OPT_UISCALE)
+		M_SetSliderValue (OPT_UISCALE, target_scale_frac);
 }
 
 qboolean M_SliderClick (int cx, int cy)
@@ -4036,7 +4155,7 @@ qboolean M_SliderClick (int cx, int cy)
 	// HACK: we set the flag to true before updating the slider
 	// to avoid changing the UI scale and implicitly the layout
 	item = M_Options_GetSelected ();
-	if (item == OPT_SCALE)
+	if (item == OPT_UISCALE)
 		slider_grab = true;
 	if (!M_SetSliderValue (item, M_MouseToSliderFraction (cx)))
 		return false;
@@ -4063,6 +4182,9 @@ static void M_Options_DrawItem (int y, int item)
 	switch (item)
 	{
 	case OPT_VIDEO:
+	case OPT_GRAPHICS:
+	case OPT_INTERFACE:
+	case OPT_GAME:
 	case OPT_CUSTOMIZE:
 	case OPT_GAMEPAD:
 	case OPT_MODS:
@@ -4070,7 +4192,7 @@ static void M_Options_DrawItem (int y, int item)
 		M_Print (x - 4, y, "...");
 		break;
 
-	case OPT_SCALE:
+	case OPT_UISCALE:
 		l = (vid.width / 320.0) - 1;
 		r = l > 0 ? (scr_conscale.value - 1) / l : 0;
 		if (slider_grab && selected)
@@ -4112,6 +4234,20 @@ static void M_Options_DrawItem (int y, int item)
 		default:
 			break;
 		}
+		break;
+
+	case OPT_CONFIRMQUIT:
+		if (!cl_confirmquit.value)
+			str = "Off";
+		else if (cl_confirmquit.value >= 2.f)
+			str = "Classic";
+		else
+			str = "Simple";
+		M_Print (x, y, str);
+		break;
+
+	case OPT_STARTDEMOS:
+		M_DrawCheckbox (x, y, cl_startdemos.value);
 		break;
 
 	case OPT_GAMMA:
@@ -4159,7 +4295,11 @@ static void M_Options_DrawItem (int y, int item)
 		M_DrawCheckbox (x, y, bgm_extmusic.value);
 		break;
 
-	case OPT_ALWAYRUN:
+	case OPT_WATERSNDFX:
+		M_DrawCheckbox (x, y, snd_waterfx.value);
+		break;
+
+	case OPT_ALWAYSRUN:
 		if (cl_alwaysrun.value)
 			M_Print (x, y, "QuakeSpasm");
 		else if (cl_forwardspeed.value > 200.0)
@@ -4170,6 +4310,10 @@ static void M_Options_DrawItem (int y, int item)
 
 	case OPT_VIEWBOB:
 		M_Print (x, y, cl_bob.value ? "On" : "Off");
+		break;
+
+	case OPT_ANGLELIMITS:
+		M_Print (x, y, cl_maxpitch.value < 90.f ? "Classic" : "Full");
 		break;
 
 	case OPT_RECOIL:
@@ -4189,6 +4333,14 @@ static void M_Options_DrawItem (int y, int item)
 		M_DrawCheckbox (x, y, (in_mlook.state & 1) || freelook.value);
 		break;
 
+	case OPT_LOOKSTRAFE:
+		M_DrawCheckbox (x, y, lookstrafe.value);
+		break;
+
+	case OPT_LOOKSPRING:
+		M_DrawCheckbox (x, y, lookspring.value);
+		break;
+
 	case OPT_FOV:
 		r = (scr_fov.value - FOV_MIN) / (FOV_MAX - FOV_MIN);
 		M_DrawSlider (x, y, r, va ("%.0f", scr_fov.value));
@@ -4199,16 +4351,31 @@ static void M_Options_DrawItem (int y, int item)
 		M_DrawSlider (x, y, r, va ("%.0f%%", 100.f * r));
 		break;
 
+	case OPT_MENUBGALPHA:
+		r = 1.f - scr_menubgalpha.value;
+		M_DrawSlider (x, y, r, va ("%.0f%%", 100.f * r));
+		break;
+
+	case OPT_CONALPHA:
+		r = 1.f - scr_conalpha.value;
+		M_DrawSlider (x, y, r, va ("%.0f%%", 100.f * r));
+		break;
+
+	case OPT_CONBRIGHTNESS:
+		r = 1.f - scr_conbrightness.value;
+		M_DrawSlider (x, y, r, va ("%.0f%%", 100.f * r));
+		break;
+
 	//
 	// Video Options
 	//
-	case VID_OPT_RESOLUTION:
+	case OPT_RESOLUTION:
 		M_Print (x, y, va("%i x %i", (int)vid_width.value, (int)vid_height.value));
 		break;
-	case VID_OPT_REFRESHRATE:
+	case OPT_REFRESHRATE:
 		M_Print (x, y, va("%i Hz", (int)vid_refreshrate.value));
 		break;
-	case VID_OPT_DISPLAYMODE:
+	case OPT_DISPLAYMODE:
 		switch (VID_Menu_GetDisplayMode ())
 		{
 		case DISPLAYMODE_FULLSCREEN:	M_Print (x, y, "Fullscreen"); break;
@@ -4217,60 +4384,79 @@ static void M_Options_DrawItem (int y, int item)
 		default:						M_Print (x, y, "Other"); break;
 		}
 		break;
-	case VID_OPT_VSYNC:
+	case OPT_VSYNC:
 		M_DrawCheckbox (x, y, (int)vid_vsync.value);
 		break;
-	case VID_OPT_FSAA:
+	case OPT_FSAA:
 		M_Print (x, y, framebufs.scene.samples >= 2 ? va("%ix", framebufs.scene.samples) : "Off");
 		break;
-	case VID_OPT_FSAA_MODE:
+	case OPT_FSAA_MODE:
 		M_Print (x, y, vid_fsaamode.value ? "Full" : "Edges only");
 		break;
-	case VID_OPT_SCALE:
+	case OPT_RENDERSCALE:
 		M_Print (x, y, r_refdef.scale >= 2 ? va("1/%i", r_refdef.scale) : "Off");
 		break;
-	case VID_OPT_ANISO:
+	case OPT_ANISO:
 		M_Print (x, y, gl_texture_anisotropy.value >= 2.f ?
 			va("%ix", q_min ((int)gl_texture_anisotropy.value, (int)gl_max_anisotropy)) :
 			"Off"
 		);
 		break;
-	case VID_OPT_TEXFILTER:
+	case OPT_TEXFILTER:
 		M_Print (x, y, VID_Menu_GetTexFilterDesc ());
 		break;
-	case VID_OPT_MD5:
-		M_Print (x, y, r_md5.value ? "Smooth" : "Classic");
+	case OPT_MD5:
+		M_Print (x, y, r_md5.value ? "Remastered" : "Classic");
 		break;
-	case VID_OPT_ANIMLERP:
+	case OPT_ANIMLERP:
 		M_Print (x, y, r_lerpmodels.value ? "Smooth" : "Classic");
 		break;
-	case VID_OPT_PARTICLES:
+	case OPT_PARTICLES:
 		M_Print (x, y, VID_Menu_GetParticlesDesc ());
 		break;
-	case VID_OPT_WATERWARP:
+	case OPT_WATERWARP:
 		M_Print (x, y, VID_Menu_GetWaterWarpDesc ());
 		break;
-	case VID_OPT_ALPHAMODE:
+	case OPT_ALPHAMODE:
 		M_Print (x, y, VID_Menu_GetAlphaModeDesc ());
 		break;
-	case VID_OPT_DLIGHTS:
+	case OPT_DLIGHTS:
 		M_Print (x, y, r_dynamic.value ? "On" : "Off");
 		break;
-	case VID_OPT_SOFTEMU:
+	case OPT_SOFTEMU:
 		M_Print (x, y, VID_Menu_GetSoftEmuDesc ());
 		break;
-	case VID_OPT_SOFTEMU_MDL:
+	case OPT_SOFTEMU_MDL:
 		if (r_softemu_mdl_warp.value < 0.f)
 			str = "Auto";
 		else
 			str = r_softemu_mdl_warp.value ? "On" : "Off";
 		M_Print (x, y, str);
 		break;
-	case VID_OPT_FPSLIMIT:
+	case OPT_FPSLIMIT:
 		M_Print (x, y, host_maxfps.value ? va("%i", (int)host_maxfps.value): "Off");
 		break;
-	case VID_OPT_SHOWFPS:
-		M_Print (x, y, scr_showfps.value ? "On" : "Off");
+	case OPT_SHOWFPS:
+		M_DrawCheckbox (x, y, scr_showfps.value);
+		break;
+	case OPT_SHOWSPEED:
+		M_DrawCheckbox (x, y, scr_showspeed.value);
+		break;
+	case OPT_SHOWTIME:
+		M_DrawCheckbox (x, y, scr_clock.value);
+		break;
+	case OPT_MENUBGSTYLE:
+		if (scr_menubgstyle.value < 0.f)
+			str = "Auto";
+		else if ((int)scr_menubgstyle.value == 0)
+			str = "GLQuake";
+		else if ((int)scr_menubgstyle.value == 1)
+			str = "WinQuake 1";
+		else if ((int)scr_menubgstyle.value == 2)
+			str = "WinQuake 2";
+		else
+			str = "DOSQuake";
+		M_Print (x, y, str);
 		break;
 
 	//
@@ -4388,10 +4574,10 @@ void M_Options_Draw (void)
 	p = Draw_CachePic ("gfx/p_option.lmp");
 	M_DrawPic ( (320-p->width)/2, y + 4, p);
 
-	y += OPTIONS_LISTOFS + optionsmenu.yofs;
-
 	if (optionsmenu.subtitle && optionsmenu.subtitle[0])
-		M_PrintWhite ((320-8*strlen(optionsmenu.subtitle))/2, y - 16, optionsmenu.subtitle);
+		M_PrintWhite ((320-8*strlen(optionsmenu.subtitle))/2, y + 32, optionsmenu.subtitle);
+
+	y += OPTIONS_LISTOFS + optionsmenu.yofs;
 
 	if (M_List_GetOverflow (&optionsmenu.list) > 0)
 	{
@@ -4494,11 +4680,20 @@ void M_Options_Key (int k)
 		case OPT_GAMEPAD:
 			M_Menu_Gamepad_f ();
 			break;
+		case OPT_GAME:
+			M_Options_Init (m_game);
+			break;
+		case OPT_GRAPHICS:
+			M_Options_Init (m_graphics);
+			break;
+		case OPT_INTERFACE:
+			M_Options_Init (m_interface);
+			break;
 
-		case VID_OPT_TEST:
+		case OPT_TEST_VIDEO:
 			Cbuf_AddText ("vid_test\n");
 			break;
-		case VID_OPT_APPLY:
+		case OPT_APPLY_VIDEO:
 			Cbuf_AddText ("vid_restart\n");
 			key_dest = key_game;
 			m_state = m_none;
@@ -6748,7 +6943,7 @@ void M_Draw (void)
 
 	GL_SetCanvas (CANVAS_MENU); //johnfitz
 
-	switch (m_state)
+	switch (M_GetBaseState (m_state))
 	{
 	case m_none:
 		break;
@@ -6794,8 +6989,6 @@ void M_Draw (void)
 		break;
 
 	case m_options:
-	case m_video:
-	case m_gamepad:
 		M_Options_Draw ();
 		break;
 
@@ -6871,7 +7064,7 @@ void M_Keydown (int key)
 		}
 	}
 
-	switch (m_state)
+	switch (M_GetBaseState (m_state))
 	{
 	case m_none:
 		return;
@@ -6917,8 +7110,6 @@ void M_Keydown (int key)
 		break;
 
 	case m_options:
-	case m_video:
-	case m_gamepad:
 		M_Options_Key (key);
 		return;
 
@@ -6984,7 +7175,7 @@ void M_Mousemove (int x, int y)
 		return;
 	}
 
-	switch (m_state)
+	switch (M_GetBaseState (m_state))
 	{
 	default:
 		return;
@@ -7026,8 +7217,6 @@ void M_Mousemove (int x, int y)
 		return;
 
 	case m_options:
-	case m_video:
-	case m_gamepad:
 		M_Options_Mousemove (x, y);
 		return;
 
@@ -7068,7 +7257,7 @@ void M_Mousemove (int x, int y)
 
 void M_Charinput (int key)
 {
-	switch (m_state)
+	switch (M_GetBaseState (m_state))
 	{
 	case m_setup:
 		M_Setup_Char (key);
@@ -7086,8 +7275,6 @@ void M_Charinput (int key)
 		M_Mods_Char (key);
 		return;
 	case m_options:
-	case m_video:
-	case m_gamepad:
 		M_Options_Char (key);
 		return;
 	case m_keys:
@@ -7101,7 +7288,7 @@ void M_Charinput (int key)
 
 textmode_t M_TextEntry (void)
 {
-	switch (m_state)
+	switch (M_GetBaseState (m_state))
 	{
 	case m_setup:
 		return M_Setup_TextEntry ();
@@ -7114,8 +7301,6 @@ textmode_t M_TextEntry (void)
 	case m_mods:
 		return M_Mods_TextEntry ();
 	case m_options:
-	case m_video:
-	case m_gamepad:
 		return M_Options_TextEntry ();
 	case m_keys:
 		return M_Keys_TextEntry ();

@@ -101,6 +101,8 @@ extern	cvar_t		scr_menubgstyle;
 extern	cvar_t		scr_sbarscale;
 extern	cvar_t		scr_conwidth;
 extern	cvar_t		scr_conscale;
+extern	cvar_t		scr_conalpha;
+extern	cvar_t		scr_conbrightness;
 extern	cvar_t		scr_scale;
 extern	cvar_t		scr_crosshairscale;
 //johnfitz
