@@ -791,7 +791,7 @@ LRESULT CALLBACK KeyFilter (int nCode, WPARAM wParam, LPARAM lParam)
 			qboolean intercept =
 				force_intercept ||
 				key == HK_PRINTSCREEN ||
-				(key_dest == key_game || M_KeyBinding ())
+				(key_dest == key_game || M_WaitingForKeyBinding ())
 			;
 
 			if (intercept)
