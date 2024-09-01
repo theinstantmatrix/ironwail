@@ -1157,7 +1157,7 @@ static void Modlist_Add (const char *name)
 						// if they include Copper's mapdb.json unmodified.
 						// In all other cases we skip the dir check so that players can rename mod dirs
 						// as they please without losing their descriptions in the add-on menu.
-						if (is_base_mapdb || q_strcasecmp (mod_dir, "copper") != 0)
+						if (is_base_mapdb || q_strcasecmp (mod_dir, "copper") == 0)
 							if (q_strcasecmp (mod_dir, name) != 0)
 								continue;
 
