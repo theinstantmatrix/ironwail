@@ -6945,6 +6945,7 @@ void M_Draw (void)
 
 	switch (M_GetBaseState (m_state))
 	{
+	default:
 	case m_none:
 		break;
 
@@ -7066,6 +7067,7 @@ void M_Keydown (int key)
 
 	switch (M_GetBaseState (m_state))
 	{
+	default:
 	case m_none:
 		return;
 
