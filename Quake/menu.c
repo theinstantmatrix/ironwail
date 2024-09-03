@@ -4309,7 +4309,7 @@ static void M_Options_DrawItem (int y, int item)
 		break;
 
 	case OPT_VIEWBOB:
-		M_Print (x, y, cl_bob.value ? "On" : "Off");
+		M_DrawCheckbox (x, y, cl_bob.value);
 		break;
 
 	case OPT_ANGLELIMITS:
@@ -4421,7 +4421,7 @@ static void M_Options_DrawItem (int y, int item)
 		M_Print (x, y, VID_Menu_GetAlphaModeDesc ());
 		break;
 	case OPT_DLIGHTS:
-		M_Print (x, y, r_dynamic.value ? "On" : "Off");
+		M_DrawCheckbox (x, y, r_dynamic.value);
 		break;
 	case OPT_SOFTEMU:
 		M_Print (x, y, VID_Menu_GetSoftEmuDesc ());
