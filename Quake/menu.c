@@ -784,6 +784,8 @@ qboolean M_List_SelectNextMatch (menulist_t *list, qboolean (*match_fn) (int idx
 				return false;
 			j = 0;
 		}
+		if (list->isactive_fn && !list->isactive_fn (j))
+			continue;
 		if (!match_fn || match_fn (j))
 		{
 			list->cursor = j;
@@ -804,7 +806,7 @@ qboolean M_List_SelectNextSearchMatch (menulist_t *list, int start, int dir)
 
 qboolean M_List_SelectNextActive (menulist_t *list, int start, int dir, qboolean wrap)
 {
-	return M_List_SelectNextMatch (list, list->isactive_fn, start, dir, wrap);
+	return M_List_SelectNextMatch (list, NULL, start, dir, wrap);
 }
 
 void M_List_UpdateMouseSelection (menulist_t *list)
