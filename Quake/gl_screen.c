@@ -1983,6 +1983,7 @@ void SCR_UpdateScreen (void)
 	{
 		SCR_DrawLoading ();
 		Sbar_Draw ();
+		M_Draw ();
 	}
 	else if (cl.intermission == 1 && key_dest == key_game) //end of level
 	{

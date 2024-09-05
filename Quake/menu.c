@@ -1128,8 +1128,6 @@ static qboolean M_Ticker_Key (menuticker_t *ticker, int key)
 
 //=============================================================================
 
-int m_save_demonum;
-
 /*
 ================
 M_ToggleMenu_f
@@ -1202,11 +1200,6 @@ enum
 
 void M_Menu_Main_f (void)
 {
-	if (key_dest != key_menu)
-	{
-		m_save_demonum = cls.demonum;
-		cls.demonum = -1;
-	}
 	IN_DeactivateForMenu();
 	key_dest = key_menu;
 	m_state = m_main;
@@ -1266,11 +1259,6 @@ void M_Main_Key (int key)
 		IN_Activate();
 		key_dest = key_game;
 		m_state = m_none;
-		cls.demonum = m_save_demonum;
-		if (!fitzmode && !cl_startdemos.value)	/* QuakeSpasm customization: */
-			break;
-		if (cls.demonum != -1 && !cls.demoplayback && cls.state != ca_connected)
-			CL_NextDemo ();
 		break;
 
 	case K_DOWNARROW:
