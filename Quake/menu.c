@@ -3992,9 +3992,9 @@ void M_DrawThresholdSlider (int x, int y, float range, qboolean enabled, float l
 	M_DrawSliderWithMarkers (x, y, range, &marker, enabled ? 1 : 0, desc);
 }
 
-void M_DrawCheckbox (int x, int y, int on)
+void M_DrawCheckbox (int x, int y, float value)
 {
-	M_Print (x, y, on ? "On" : "Off");
+	M_Print (x, y, value ? "On" : "Off");
 }
 
 qboolean M_SetSliderValue (int option, float f)
