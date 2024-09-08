@@ -1252,7 +1252,7 @@ void SCR_DrawEdictInfo (void)
 	if (VEC_SIZE (bbox_linked) == 0)
 		return;
 
-	GL_SetCanvas (CANVAS_MENU);
+	GL_SetCanvas (CANVAS_BOTTOMRIGHT);
 	SCR_SetupProjToCanvasMap (&proj2canvas);
 
 	PR_SwitchQCVM (&sv.qcvm);
