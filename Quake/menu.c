@@ -3221,6 +3221,8 @@ void M_Menu_Gamepad_f (void)
 #define PP_CONCAT2(a,b)		a##b
 #define PP_CONCAT(a,b)		PP_CONCAT2 (a, b)
 #define SPACER				PP_CONCAT (_SPACER_, __COUNTER__)
+#define TITLE_BAR			"\35\36\37"
+#define TITLE(str)			TITLE_BAR " " str " " TITLE_BAR
 
 ////////////////////////////////////////////////////////////////////////
 #define OPTIONS_LIST(begin_menu, item, end_menu)						\
@@ -3244,7 +3246,7 @@ void M_Menu_Gamepad_f (void)
 		item (OPT_CONSOLE,				"Console")						\
 		item (OPT_DEFAULTS,				"Reset All")					\
 	end_menu ()															\
-	begin_menu (VIDEO_OPTIONS, m_video, "Display Options")				\
+	begin_menu (VIDEO_OPTIONS, m_video, TITLE("Display"))				\
 		item (OPT_RESOLUTION,			"Resolution")					\
 		item (OPT_DISPLAYMODE,			"Display Mode")					\
 		item (OPT_REFRESHRATE,			"Refresh Rate")					\
@@ -3254,7 +3256,7 @@ void M_Menu_Gamepad_f (void)
 		item (OPT_VSYNC,				"Vertical Sync")				\
 		item (OPT_FPSLIMIT,				"FPS Limit")					\
 	end_menu ()															\
-	begin_menu (GRAPHICS_OPTIONS, m_graphics, "Graphics Options")		\
+	begin_menu (GRAPHICS_OPTIONS, m_graphics, TITLE("Graphics"))		\
 		item (OPT_SOFTEMU,				"8-bit Mode")					\
 		item (OPT_SOFTEMU_MDL,			"Model Warping")				\
 		item (OPT_MD5,					"Models")						\
@@ -3271,7 +3273,7 @@ void M_Menu_Gamepad_f (void)
 		item (OPT_WATERWARP,			"Underwater FX")				\
 		item (OPT_DLIGHTS,				"Dynamic Lights")				\
 	end_menu ()															\
-	begin_menu (INTERFACE_OPTIONS, m_interface, "Interface Options")	\
+	begin_menu (INTERFACE_OPTIONS, m_interface, TITLE("Interface"))		\
 		item (OPT_UISCALE,				"Scale")						\
 		item (OPT_PIXELASPECT,			"Pixels")						\
 		item (OPT_UIMOUSE,				"Mouse")						\
@@ -3291,8 +3293,8 @@ void M_Menu_Gamepad_f (void)
 		item (OPT_CONFIRMQUIT,			"Quit Prompt")					\
 		item (OPT_STARTDEMOS,			"Start Demos")					\
 	end_menu ()															\
-	begin_menu (GAMEPAD_OPTIONS, m_gamepad, "Gamepad Options")			\
-		item (GPAD_OPT_DEVICE,			"Gamepad")						\
+	begin_menu (GAMEPAD_OPTIONS, m_gamepad, TITLE("Gamepad"))			\
+		item (GPAD_OPT_DEVICE,			"Device")						\
 		item (SPACER,					"")								\
 		item (SPACER,					"")								\
 		item (GPAD_OPT_SENSX,			"Yaw Speed")					\
@@ -3318,7 +3320,7 @@ void M_Menu_Gamepad_f (void)
 		item (GPAD_OPT_GYRONOISE,		"Gyro Noise Thresh")			\
 		item (GPAD_OPT_CALIBRATE,		"Calibrate")					\
 	end_menu ()															\
-	begin_menu (GAME_OPTIONS, m_game, "Game Options")					\
+	begin_menu (GAME_OPTIONS, m_game, TITLE("Game"))					\
 		item (OPT_FOV,					"Field Of View")				\
 		item (OPT_FOVDISTORT,			"Gun Distortion")				\
 		item (OPT_RECOIL,				"Recoil")						\
@@ -4543,7 +4545,7 @@ static void M_Options_DrawItem (int y, int item)
 	case GPAD_OPT_DEVICE:
 		str = IN_GetGamepadName ();
 		if (!str)
-			str = "Off";
+			str = "None";
 		M_PrintWordWrap (x, y, str, 320 - x, 16, true); // note: hijacking the empty line below this option
 		break;
 	case GPAD_OPT_SENSX:
