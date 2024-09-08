@@ -934,6 +934,13 @@ void R_SetupView (void)
 	{
 		r_framedata.screendither = NOISESCALE * r_dither.value * r_softemu_dither_screen.value;
 		r_framedata.texturedither = NOISESCALE * r_dither.value * r_softemu_dither_texture.value;
+
+		// r_fullbright replaces the actual lightmap texture with a 2x2 50% grey one.
+		// Since texture-space dithering is applied on a scale of 1/16 of a lightmap texel,
+		// this would lead to massively overscaled dithering patterns, so we disable
+		// texture-space dithering in this case.
+		if (r_fullbright_cheatsafe)
+			r_framedata.texturedither = 0.f;
 	}
 	else if (softemu == SOFTEMU_OFF)
 	{
