@@ -389,6 +389,11 @@ float GetClampedFraction (float val, float minval, float maxval)
 	return CLAMP (0.f, val, 1.f);
 }
 
+float EaseInOut (float t)
+{
+	return t * t * (3.f - 2.f * t);
+}
+
 /*
 ==================
 Interleave0

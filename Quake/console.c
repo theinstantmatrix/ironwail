@@ -2296,7 +2296,7 @@ Draws the console with the solid background
 The typing input line at the bottom should only be drawn if typing is allowed
 ================
 */
-void Con_DrawConsole (int lines, qboolean drawinput)
+void Con_DrawConsole (int lines, qboolean drawbg, qboolean drawinput)
 {
 	int	i, x, y, j, sb, rows;
 	const char	*text;
@@ -2310,7 +2310,8 @@ void Con_DrawConsole (int lines, qboolean drawinput)
 	GL_SetCanvas (CANVAS_CONSOLE);
 
 // draw the background
-	Draw_ConsoleBackground ();
+	if (drawbg)
+		Draw_ConsoleBackground ();
 
 // draw the buffer text
 	rows = (con_vislines +7)/8;

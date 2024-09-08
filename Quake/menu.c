@@ -27,6 +27,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <time.h>
 
 cvar_t ui_mouse	= {"ui_mouse", "1", CVAR_ARCHIVE};
+cvar_t ui_live_preview = {"ui_live_preview", "1", CVAR_ARCHIVE};
 cvar_t ui_mouse_sound = {"ui_mouse_sound", "0", CVAR_ARCHIVE};
 cvar_t ui_sound_throttle = {"ui_sound_throttle", "0.1", CVAR_ARCHIVE};
 cvar_t ui_search_timeout = {"ui_search_timeout", "1", CVAR_ARCHIVE};
@@ -202,6 +203,10 @@ void M_ConfigureNetSubsystem(void);
 void M_SetSkillMenuMap (const char *name);
 void M_Options_SelectMods (void);
 void M_Options_Init (enum m_state_e state);
+
+#define PREVIEW_FADEIN_TIME				0.125
+#define PREVIEW_FADEOUT_TIME			0.125
+#define PREVIEW_HOLD_TIME				0.875
 
 #define SEARCH_FADE_TIMEOUT				0.5
 #define SEARCH_TYPE_TIMEOUT				1.5
@@ -3220,6 +3225,7 @@ void M_Menu_Gamepad_f (void)
 ////////////////////////////////////////////////////////////////////////
 #define OPTIONS_LIST(begin_menu, item, end_menu)						\
 	begin_menu (OPTIONS, m_options, "")									\
+		item (OPT_PREVIEW,				"Live Preview")					\
 		item (OPT_GAMMA,				"Brightness")					\
 		item (OPT_CONTRAST,				"Contrast")						\
 		item (OPT_VIDEO,				"Display")						\
@@ -3423,6 +3429,14 @@ struct
 
 	int				submenu_cursors[Q_COUNTOF (options_submenus)];
 	int				*last_cursor;
+
+	struct
+	{
+		int			id;
+		float		frac;
+		float		frac_target;
+		float		hold_time;
+	}				preview;
 } optionsmenu;
 
 qboolean slider_grab;
@@ -3518,6 +3532,66 @@ static qboolean M_Options_Match (int index)
 	return q_strcasestr (name, optionsmenu.list.search.text) != NULL;
 }
 
+static qboolean M_Options_WantsConsole (void)
+{
+	return optionsmenu.preview.id == OPT_CONALPHA || optionsmenu.preview.id == OPT_CONBRIGHTNESS;
+}
+
+static void M_Options_Preview (int id)
+{
+	if (cls.state == ca_connected && cls.signon == SIGNONS)
+	{
+		if (id < GRAPHICS_OPTIONS_BEGIN || id >= GRAPHICS_OPTIONS_END)
+		{
+			switch (id)
+			{
+			case OPT_GAMMA:
+			case OPT_CONTRAST:
+			case OPT_UISCALE:
+			case OPT_HUDSTYLE:
+			case OPT_SBALPHA:
+			case OPT_HUDLEVEL:
+			case OPT_CONALPHA:
+			case OPT_CONBRIGHTNESS:
+			case OPT_FOV:
+			case OPT_FOVDISTORT:
+				break;
+
+			default:
+				id = -1;
+				break;
+			}
+		}
+	}
+	else
+	{
+		if (id != OPT_CONBRIGHTNESS)
+			id = -1;
+	}
+
+	if (!ui_live_preview.value)
+		id = -1;
+
+	if (id < 0)
+	{
+		optionsmenu.preview.frac_target = 0.f;
+		optionsmenu.preview.hold_time = 0.f;
+		return;
+	}
+
+	optionsmenu.preview.id = id;
+	optionsmenu.preview.frac_target = 1.f;
+	optionsmenu.preview.hold_time = PREVIEW_HOLD_TIME;
+}
+
+static void M_Options_ResetPreview (void)
+{
+	optionsmenu.preview.frac = 0.f;
+	optionsmenu.preview.id = -1;
+	optionsmenu.preview.frac_target = 0.f;
+	optionsmenu.preview.hold_time = 0.f;
+}
+
 void M_Options_Init (enum m_state_e state)
 {
 	int submenu = M_Options_FindSubmenu (state);
@@ -3545,6 +3619,9 @@ void M_Options_Init (enum m_state_e state)
 	optionsmenu.list.cursor = *optionsmenu.last_cursor;
 	optionsmenu.list.isactive_fn = M_Options_IsSelectable;
 	optionsmenu.list.search.match_fn = M_Options_Match;
+
+	// reset fading
+	M_Options_ResetPreview ();
 
 	M_List_ClearSearch (&optionsmenu.list);
 
@@ -3615,6 +3692,8 @@ void M_AdjustSliders (int dir)
 
 	M_ThrottledSound ("misc/menu3.wav");
 	M_List_ClearSearch (&optionsmenu.list);
+
+	M_Options_Preview (M_Options_GetSelected ());
 
 	switch (M_Options_GetSelected ())
 	{
@@ -3688,6 +3767,10 @@ void M_AdjustSliders (int dir)
 
 	case OPT_HUDSTYLE:	// hud style
 		Cvar_SetValueQuick (&scr_hudstyle, ((int) q_max (scr_hudstyle.value, 0.f) + (int) HUD_COUNT + dir) % (int) HUD_COUNT);
+		break;
+
+	case OPT_PREVIEW:
+		Cbuf_AddText ("toggle ui_live_preview\n");
 		break;
 
 	case OPT_ALWAYSRUN:	// always run
@@ -4002,6 +4085,8 @@ qboolean M_SetSliderValue (int option, float f)
 	float l;
 	f = CLAMP (0.f, f, 1.f);
 
+	M_Options_Preview (option);
+
 	switch (option)
 	{
 	case OPT_UISCALE:	// console and menu scale
@@ -4224,6 +4309,10 @@ static void M_Options_DrawItem (int y, int item)
 		default:
 			break;
 		}
+		break;
+
+	case OPT_PREVIEW:
+		M_DrawCheckbox (x, y, ui_live_preview.value);
 		break;
 
 	case OPT_CONFIRMQUIT:
@@ -4542,11 +4631,87 @@ static void M_Options_DrawItem (int y, int item)
 	}
 }
 
+/*
+================
+M_Options_UpdatePreview
+================
+*/
+static void M_Options_UpdatePreview (void)
+{
+	if (optionsmenu.preview.frac != optionsmenu.preview.frac_target)
+	{
+		if (optionsmenu.preview.frac < optionsmenu.preview.frac_target)
+		{
+			optionsmenu.preview.frac += host_rawframetime / PREVIEW_FADEOUT_TIME;
+			optionsmenu.preview.frac = q_min (optionsmenu.preview.frac, optionsmenu.preview.frac_target);
+		}
+		else
+		{
+			optionsmenu.preview.frac -= host_rawframetime / PREVIEW_FADEIN_TIME;
+			optionsmenu.preview.frac = q_max (optionsmenu.preview.frac, optionsmenu.preview.frac_target);
+			if (optionsmenu.preview.frac == optionsmenu.preview.frac_target)
+				optionsmenu.preview.id = -1;
+		}
+	}
+	else if (optionsmenu.preview.hold_time > 0.f && !slider_grab)
+	{
+		optionsmenu.preview.hold_time -= host_rawframetime;
+		if (optionsmenu.preview.hold_time <= 0.f)
+		{
+			optionsmenu.preview.hold_time = 0.f;
+			optionsmenu.preview.frac_target = 0.f;
+		}
+	}
+}
+
+/*
+================
+M_Options_DrawFadeScreen
+================
+*/
+static void M_Options_DrawConsole (void)
+{
+	Draw_ConsoleBackground ();
+	GL_PushCanvasColor (1.f, 1.f, 1.f, optionsmenu.preview.frac);
+	Con_DrawConsole (scr_con_current, false, false);
+	GL_PopCanvasColor ();
+}
+
+/*
+================
+M_Options_DrawFadeScreen
+================
+*/
+static void M_Options_DrawFadeScreen (void)
+{
+	int y, firstvis, numvis;
+	float frac, y0, y1;
+
+	GL_SetCanvas (CANVAS_MENU);
+	y0 = glcanvas.top;
+	y1 = glcanvas.bottom;
+
+	M_List_GetVisibleRange (&optionsmenu.list, &firstvis, &numvis);
+	firstvis += optionsmenu.first_item;
+	if ((unsigned int)(optionsmenu.preview.id - firstvis) < (unsigned int)numvis)
+	{
+		y = optionsmenu.y + OPTIONS_LISTOFS + optionsmenu.yofs;
+		y += (optionsmenu.preview.id - firstvis) * CHARSIZE + CHARSIZE / 2;
+		frac = EaseInOut (optionsmenu.preview.frac);
+		y0 = LERP (y0, y - CHARSIZE, frac);
+		y1 = LERP (y1, y + CHARSIZE, frac);
+	}
+
+	Draw_PartialFadeScreen (glcanvas.left, glcanvas.right, y0, y1);
+}
+
 void M_Options_Draw (void)
 {
-	qboolean enabled, wasenabled;
+	qboolean enabled, wasenabled, selected, isolated;
 	int firstvis, numvis;
 	int i, x, y, cols;
+	int option;
+	float f;
 	qpic_t	*p;
 
 	if (slider_grab && !keydown[K_MOUSE1])
@@ -4554,11 +4719,21 @@ void M_Options_Draw (void)
 
 	M_Options_UpdateLayout ();
 	M_List_Update (&optionsmenu.list);
-	*optionsmenu.last_cursor = optionsmenu.list.cursor;
+	
+	if (*optionsmenu.last_cursor != optionsmenu.list.cursor)
+	{
+		*optionsmenu.last_cursor = optionsmenu.list.cursor;
+		M_Options_Preview (-1);
+	}
+
+	M_Options_UpdatePreview ();
 
 	x = 56;
 	y = optionsmenu.y;
 	cols = 32;
+
+	f = 1.f - optionsmenu.preview.frac;
+	GL_PushCanvasColor (1.f, 1.f, 1.f, f * f);
 
 	M_DrawTransPic (16, 4, Draw_CachePic ("gfx/qplaque.lmp") );
 	p = Draw_CachePic ("gfx/p_option.lmp");
@@ -4582,24 +4757,34 @@ void M_Options_Draw (void)
 	while (numvis-- > 0)
 	{
 		i = firstvis++;
+		option = optionsmenu.first_item + i;
 		enabled = M_Options_IsEnabled (i);
+		selected = (i == optionsmenu.list.cursor);
+		isolated = (option == optionsmenu.preview.id && enabled);
+
 		if (enabled != wasenabled)
 		{
 			float val = enabled ? 1.f : 0.375f;
 			GL_SetCanvasColor (val, val, val, 1.f);
 			wasenabled = enabled;
 		}
-		M_Options_DrawItem (y, optionsmenu.first_item + i);
+
+		if (isolated)
+			GL_PushCanvasColor (1.f, 1.f, 1.f, 1.f);
+
+		M_Options_DrawItem (y, option);
 
 		// cursor
-		if (i == optionsmenu.list.cursor)
+		if (selected)
 			M_DrawArrowCursor (OPTIONS_MIDPOS - 20, y);
+
+		if (isolated)
+			GL_PopCanvasColor ();
 
 		y += 8;
 	}
 
-	if (!wasenabled)
-		GL_SetCanvasColor (1.f, 1.f, 1.f, 1.f);
+	GL_PopCanvasColor ();
 }
 
 void M_Options_Key (int k)
@@ -4630,6 +4815,11 @@ void M_Options_Key (int k)
 	case K_BBUTTON:
 	case K_MOUSE4:
 	case K_MOUSE2:
+		if (optionsmenu.preview.frac != 0.f)
+		{
+			M_Options_ResetPreview ();
+			return;
+		}
 		if (m_state == m_video)
 			VID_SyncCvars (); //sync cvars before leaving menu. FIXME: there are other ways to leave menu
 		if (m_state == m_options)
@@ -6880,6 +7070,7 @@ void M_Init (void)
 
 	Cvar_RegisterVariable (&ui_mouse);
 	Cvar_SetCallback (&ui_mouse, UI_Mouse_f);
+	Cvar_RegisterVariable (&ui_live_preview);
 	Cvar_RegisterVariable (&ui_mouse_sound);
 	Cvar_RegisterVariable (&ui_sound_throttle);
 	Cvar_RegisterVariable (&ui_search_timeout);
@@ -6911,8 +7102,11 @@ static void M_UpdateBounds (void)
 
 void M_Draw (void)
 {
+	qboolean options;
 	if (m_state == m_none || key_dest != key_menu)
 		return;
+
+	options = (M_GetBaseState (m_state) == m_options);
 
 	M_UpdateBounds ();
 
@@ -6920,11 +7114,19 @@ void M_Draw (void)
 	{
 		if (scr_con_current)
 		{
-			Draw_ConsoleBackground ();
+			if (options)
+				M_Options_DrawConsole ();
+			else
+				Draw_ConsoleBackground ();
+
 			S_ExtraUpdate ();
 		}
 
-		Draw_FadeScreen (); //johnfitz -- fade even if console fills screen
+		//johnfitz -- fade even if console fills screen
+		if (M_GetBaseState (m_state) == m_options)
+			M_Options_DrawFadeScreen ();
+		else
+			Draw_FadeScreen ();
 	}
 	else
 	{
@@ -7305,6 +7507,11 @@ textmode_t M_TextEntry (void)
 qboolean M_WaitingForKeyBinding (void)
 {
 	return key_dest == key_menu && m_state == m_keys && bind_grab;
+}
+
+qboolean M_WantsConsole (void)
+{
+	return key_dest == key_menu && M_GetBaseState (m_state) == m_options && M_Options_WantsConsole ();
 }
 
 

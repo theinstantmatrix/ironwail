@@ -78,7 +78,8 @@ typedef struct glcanvas_s {
 	canvastype			type;
 	float				left, right, bottom, top;
 	drawtransform_t		transform;
-	GLubyte				color[4];
+	uint32_t			colorstack[8];
+	int					colorstacktop;
 	unsigned			blendmode;
 	struct gltexture_s	*texture;
 } glcanvas_t;
