@@ -89,7 +89,7 @@ extern qboolean quake64;
 
 enum m_state_e m_state;
 extern qboolean	keydown[256];
-int m_mousex, m_mousey;
+float m_mousex, m_mousey;
 int m_lastkey = -1; // last key pressed
 qboolean m_ignoremouseframe;
 static int m_left, m_top, m_width, m_height;
@@ -162,26 +162,26 @@ void M_Main_Key (int key);
 	void M_Help_Key (int key);
 	void M_Quit_Key (int key);
 
-void M_Main_Mousemove (int cx, int cy);
-	void M_SinglePlayer_Mousemove (int cx, int cy);
-		void M_Load_Mousemove (int cx, int cy);
-		void M_Save_Mousemove (int cx, int cy);
-		void M_Maps_Mousemove (int cx, int cy);
-		void M_Skill_Mousemove (int cx, int cy);
-	void M_MultiPlayer_Mousemove (int cx, int cy);
-		void M_Setup_Mousemove (int cx, int cy);
-		void M_Net_Mousemove (int cx, int cy);
-		void M_LanConfig_Mousemove (int cx, int cy);
-		void M_GameOptions_Mousemove (int cx, int cy);
-		//void M_Search_Mousemove (int cx, int cy);
-		void M_ServerList_Mousemove (int cx, int cy);
-	void M_Options_Mousemove (int cx, int cy);
-		void M_Keys_Mousemove (int cx, int cy);
-		//void M_Video_Mousemove (int cx, int cy);
-		//void M_Gamepad_Mousemove (int cx, int cy);
-	void M_Mods_Mousemove (int cx, int cy);
-	//void M_Help_Mousemove (int cx, int cy);
-	//void M_Quit_Mousemove (int cx, int cy);
+void M_Main_Mousemove (float cx, float cy);
+	void M_SinglePlayer_Mousemove (float cx, float cy);
+		void M_Load_Mousemove (float cx, float cy);
+		void M_Save_Mousemove (float cx, float cy);
+		void M_Maps_Mousemove (float cx, float cy);
+		void M_Skill_Mousemove (float cx, float cy);
+	void M_MultiPlayer_Mousemove (float cx, float cy);
+		void M_Setup_Mousemove (float cx, float cy);
+		void M_Net_Mousemove (float cx, float cy);
+		void M_LanConfig_Mousemove (float cx, float cy);
+		void M_GameOptions_Mousemove (float cx, float cy);
+		//void M_Search_Mousemove (float cx, float cy);
+		void M_ServerList_Mousemove (float cx, float cy);
+	void M_Options_Mousemove (float cx, float cy);
+		void M_Keys_Mousemove (float cx, float cy);
+		//void M_Video_Mousemove (float cx, float cy);
+		//void M_Gamepad_Mousemove (float cx, float cy);
+	void M_Mods_Mousemove (float cx, float cy);
+	//void M_Help_Mousemove (float cx, float cy);
+	//void M_Quit_Mousemove (float cx, float cy);
 
 static double m_lastsoundtime;
 static char m_lastsound[MAX_QPATH];
@@ -1317,7 +1317,7 @@ void M_Main_Key (int key)
 	}
 }
 
-void M_Main_Mousemove (int cx, int cy)
+void M_Main_Mousemove (float cx, float cy)
 {
 	int prev = m_main_cursor;
 	M_UpdateCursor (cy, 32, 20, MAIN_ITEMS - !m_main_mods, &m_main_cursor);
@@ -1427,7 +1427,7 @@ void M_SinglePlayer_Key (int key)
 }
 
 
-void M_SinglePlayer_Mousemove (int cx, int cy)
+void M_SinglePlayer_Mousemove (float cx, float cy)
 {
 	int prev = m_singleplayer_cursor;
 	M_UpdateCursor (cy, 32, 20, SINGLEPLAYER_ITEMS, &m_singleplayer_cursor);
@@ -1621,7 +1621,7 @@ void M_Save_Key (int k)
 	}
 }
 
-void M_Load_Mousemove (int cx, int cy)
+void M_Load_Mousemove (float cx, float cy)
 {
 	int prev = load_cursor;
 	M_UpdateCursor (cy, 32, 8, MAX_SAVEGAMES, &load_cursor);
@@ -1629,7 +1629,7 @@ void M_Load_Mousemove (int cx, int cy)
 		M_MouseSound ("misc/menu1.wav");
 }
 
-void M_Save_Mousemove (int cx, int cy)
+void M_Save_Mousemove (float cx, float cy)
 {
 	int prev = load_cursor;
 	M_UpdateCursor (cy, 32, 8, MAX_SAVEGAMES, &load_cursor);
@@ -2016,7 +2016,7 @@ void M_Maps_Key (int key)
 }
 
 
-void M_Maps_Mousemove (int cx, int cy)
+void M_Maps_Mousemove (float cx, float cy)
 {
 	cy -= mapsmenu.y + MAPLIST_OFS;
 
@@ -2205,7 +2205,7 @@ void M_Skill_Key (int key)
 	}
 }
 
-void M_Skill_Mousemove (int cx, int cy)
+void M_Skill_Mousemove (float cx, float cy)
 {
 	int ybase = 48;
 	int itemheight = m_skill_usegfx ? 20 : 16;
@@ -2301,7 +2301,7 @@ void M_MultiPlayer_Key (int key)
 }
 
 
-void M_MultiPlayer_Mousemove (int cx, int cy)
+void M_MultiPlayer_Mousemove (float cx, float cy)
 {
 	int prev = m_multiplayer_cursor;
 	M_UpdateCursor (cy, 32, 20, MULTIPLAYER_ITEMS, &m_multiplayer_cursor);
@@ -2499,7 +2499,7 @@ textmode_t M_Setup_TextEntry (void)
 }
 
 
-void M_Setup_Mousemove (int cx, int cy)
+void M_Setup_Mousemove (float cx, float cy)
 {
 	int prev = setup_cursor;
 	M_UpdateCursorWithTable (cy, setup_cursor_table, NUM_SETUP_CMDS, &setup_cursor);
@@ -2618,7 +2618,7 @@ again:
 }
 
 
-void M_Net_Mousemove (int cx, int cy)
+void M_Net_Mousemove (float cx, float cy)
 {
 	int prev = m_net_cursor;
 	M_UpdateCursor (cy, 32, 20, m_net_items, &m_net_cursor);
@@ -4042,10 +4042,10 @@ void M_DrawSliderWithMarkers (int x, int y, float range, const slidermarker_t *m
 	for (i = 0; i < nummarkers; i++)
 	{
 		const slidermarker_t *marker = &markers[i];
-		M_DrawCharacter (x + (int) ((SLIDER_RANGE-1)*8 * CLAMP (0.f, marker->frac, 1.f) + 0.5f), y + marker->yofs, marker->glyph);
+		Draw_CharacterEx (x + (SLIDER_RANGE-1)*8 * CLAMP (0.f, marker->frac, 1.f), y + marker->yofs, CHARSIZE, CHARSIZE, marker->glyph);
 	}
 
-	M_DrawCharacter (x + (int) ((SLIDER_RANGE-1)*8 * range + 0.5f), y, 131);
+	Draw_CharacterEx (x + (SLIDER_RANGE-1)*8 * range, y, CHARSIZE, CHARSIZE, 131);
 
 	i = x + (SLIDER_RANGE+2)*8;
 	if (i + 5*8 < glcanvas.right)
@@ -4200,12 +4200,12 @@ qboolean M_SetSliderValue (int option, float f)
 	}
 }
 
-float M_MouseToRawSliderFraction (int cx)
+float M_MouseToRawSliderFraction (float cx)
 {
 	return (cx - 4) / (float)((SLIDER_RANGE - 1) * 8);
 }
 
-float M_MouseToSliderFraction (int cx)
+float M_MouseToSliderFraction (float cx)
 {
 	float f = M_MouseToRawSliderFraction (cx);
 	return CLAMP (0.f, f, 1.f);
@@ -4221,7 +4221,7 @@ void M_ReleaseSliderGrab (void)
 		M_SetSliderValue (OPT_UISCALE, target_scale_frac);
 }
 
-qboolean M_SliderClick (int cx, int cy)
+qboolean M_SliderClick (float cx, float cy)
 {
 	int item;
 	cx -= OPTIONS_MIDPOS;
@@ -4913,7 +4913,7 @@ void M_Options_Char (int key)
 	M_List_Char (&optionsmenu.list, key);
 }
 
-void M_Options_Mousemove (int cx, int cy)
+void M_Options_Mousemove (float cx, float cy)
 {
 	if (slider_grab)
 	{
@@ -5284,7 +5284,7 @@ void M_Keys_Key (int k)
 }
 
 
-void M_Keys_Mousemove (int cx, int cy)
+void M_Keys_Mousemove (float cx, float cy)
 {
 	M_List_Mousemove (&keysmenu.list, cy - keysmenu.y - KEYLIST_TOP);
 }
@@ -5749,7 +5749,7 @@ textmode_t M_LanConfig_TextEntry (void)
 }
 
 
-void M_LanConfig_Mousemove (int cx, int cy)
+void M_LanConfig_Mousemove (float cx, float cy)
 {
 	int prev = lanConfig_cursor;
 	M_UpdateCursorWithTable (cy, lanConfig_cursor_table, NUM_LANCONFIG_CMDS - StartingGame, &lanConfig_cursor);
@@ -6216,7 +6216,7 @@ void M_GameOptions_Key (int key)
 }
 
 
-void M_GameOptions_Mousemove (int cx, int cy)
+void M_GameOptions_Mousemove (float cx, float cy)
 {
 	int prev = gameoptions_cursor;
 	M_UpdateCursorWithTable (cy, gameoptions_cursor_table, NUM_GAMEOPTIONS, &gameoptions_cursor);
@@ -6378,7 +6378,7 @@ void M_ServerList_Key (int k)
 }
 
 
-void M_ServerList_Mousemove (int cx, int cy)
+void M_ServerList_Mousemove (float cx, float cy)
 {
 	int prev = slist_cursor;
 	M_UpdateCursor (cy, 32, 8, hostCacheCount, &slist_cursor);
@@ -6712,7 +6712,7 @@ textmode_t M_Mods_TextEntry (void)
 void M_Mods_Key (int key)
 {
 	const filelist_item_t *item;
-	int x, y;
+	float x, y;
 
 	if (modsmenu.scrollbar_grab)
 	{
@@ -6785,7 +6785,7 @@ void M_Mods_Key (int key)
 }
 
 
-void M_Mods_Mousemove (int cx, int cy)
+void M_Mods_Mousemove (float cx, float cy)
 {
 	cy -= modsmenu.y + MODLIST_OFS;
 
@@ -6980,13 +6980,13 @@ void M_ModInfo_Draw (void)
 
 void M_ModInfo_Key (int key)
 {
-	int dx, dy;
+	float dx, dy;
 
 	switch (key)
 	{
 	case K_MOUSE1:
-		dx = abs (m_mousex - 160) / 8;
-		dy = abs (m_mousey - modinfomenu.y - (modinfomenu.lines - 1) * 8 - 4) / 8;
+		dx = fabs (m_mousex - 160) / 8;
+		dy = fabs (m_mousey - modinfomenu.y - (modinfomenu.lines - 1) * 8 - 4) / 8;
 		if (dy > 0 || dx > 4)
 		{
 			m_entersound = true;
@@ -7346,22 +7346,22 @@ void M_Keydown (int key)
 }
 
 
-void M_Mousemove (int x, int y)
+void M_Mousemove (int screenx, int screeny)
 {
 	drawtransform_t transform;
-	float px, py;
+	float x, y;
 
 	if (bind_grab || !ui_mouse.value)
 		return;
 
 	Draw_GetCanvasTransform (CANVAS_MENU, &transform);
-	px = (x - glx) * 2.f / (float) glwidth - 1.f;
-	py = (y - gly) * 2.f / (float) glheight - 1.f;
-	py = -py;
-	px = (px - transform.offset[0]) / transform.scale[0];
-	py = (py - transform.offset[1]) / transform.scale[1];
-	m_mousex = x = (int) (px + 0.5f);
-	m_mousey = y = (int) (py + 0.5f);
+	x = (screenx - glx) * 2.f / (float) glwidth - 1.f;
+	y = (screeny - gly) * 2.f / (float) glheight - 1.f;
+	y = -y;
+	x = (x - transform.offset[0]) / transform.scale[0];
+	y = (y - transform.offset[1]) / transform.scale[1];
+	m_mousex = x;
+	m_mousey = y;
 
 	if (m_ignoremouseframe)
 	{
