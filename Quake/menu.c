@@ -2894,20 +2894,6 @@ static void VID_Menu_ChooseNextAnisotropy (int dir)
 	Cvar_SetValueQuick (&gl_texture_anisotropy, CLAMP (1, aniso, (int)gl_max_anisotropy));
 }
 
-/*
-================
-VID_Menu_ChooseNextScale
-
-chooses next scale in order, then updates r_scale cvar
-================
-*/
-static void VID_Menu_ChooseNextScale (int dir)
-{
-	// cycle [1..vid_maxscale]
-	int scale = 1 + (r_refdef.scale - 1 + vid.maxscale - dir) % vid.maxscale;
-	Cvar_SetValueQuick (&r_scale, scale);
-}
-
 static const char *const texfilters[][2] =
 {
 	{"gl_nearest_mipmap_linear", "Classic"},
@@ -3897,7 +3883,7 @@ void M_AdjustSliders (int dir)
 		Cbuf_AddText ("toggle vid_fsaamode\n");
 		break;
 	case OPT_RENDERSCALE:
-		VID_Menu_ChooseNextScale (-dir);
+		Cvar_SetValueQuick (&r_scale, CLAMP (1, r_refdef.scale + dir, vid.maxscale));
 		break;
 	case OPT_ANISO:
 		VID_Menu_ChooseNextAnisotropy (-dir);
@@ -4120,6 +4106,10 @@ qboolean M_SetSliderValue (int option, float f)
 	case OPT_CONTRAST:	// contrast
 		f += 1.f;
 		Cvar_SetValue ("contrast", f);
+		return true;
+	case OPT_RENDERSCALE:
+		f = floor (1 + f * (vid.maxscale - 1) + 0.5);
+		Cvar_SetValueQuick (&r_scale, f);
 		return true;
 	case OPT_MOUSESPEED:	// mouse speed
 		f = f * 10.f + 1.f;
@@ -4474,7 +4464,8 @@ static void M_Options_DrawItem (int y, int item)
 		M_Print (x, y, vid_fsaamode.value ? "Full" : "Edges only");
 		break;
 	case OPT_RENDERSCALE:
-		M_Print (x, y, r_refdef.scale >= 2 ? va("1/%i", r_refdef.scale) : "Off");
+		r = (r_refdef.scale - 1) / (float) (vid.maxscale - 1);
+		M_DrawSlider (x, y, r, r_refdef.scale >= 2 ? va("1/%i", r_refdef.scale) : "Off");
 		break;
 	case OPT_ANISO:
 		M_Print (x, y, gl_texture_anisotropy.value >= 2.f ?
