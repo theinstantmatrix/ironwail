@@ -3278,7 +3278,7 @@ void M_Menu_Gamepad_f (void)
 		item (OPT_PIXELASPECT,			"Pixels")						\
 		item (OPT_UIMOUSE,				"Mouse")						\
 		item (SPACER,					"")								\
-		item (OPT_HUDSTYLE,				"HUD")							\
+		item (OPT_HUDSTYLE,				"HUD Layout")					\
 		item (OPT_SBALPHA,				"HUD Alpha")					\
 		item (OPT_HUDLEVEL,				"HUD Detail")					\
 		item (OPT_CROSSHAIR,			"Crosshair")					\
@@ -3286,7 +3286,7 @@ void M_Menu_Gamepad_f (void)
 		item (OPT_SHOWTIME,				"Show Time")					\
 		item (OPT_SHOWFPS,				"Show FPS")						\
 		item (SPACER,					"")								\
-		item (OPT_MENUBGSTYLE,			"Menu BG")						\
+		item (OPT_MENUBGSTYLE,			"Menu BG Style")				\
 		item (OPT_MENUBGALPHA,			"Menu BG Alpha")				\
 		item (OPT_CONALPHA,				"Console Alpha")				\
 		item (OPT_CONBRIGHTNESS,		"Darken Console")				\
