@@ -33,6 +33,7 @@ cvar_t ui_sound_throttle = {"ui_sound_throttle", "0.1", CVAR_ARCHIVE};
 cvar_t ui_search_timeout = {"ui_search_timeout", "1", CVAR_ARCHIVE};
 
 extern cvar_t crosshair;
+extern cvar_t language;
 extern cvar_t scr_fov;
 extern cvar_t cl_gun_fovscale;
 extern cvar_t v_gunkick;
@@ -3318,6 +3319,8 @@ void M_Menu_Gamepad_f (void)
 		item (OPT_LOOKSTRAFE,			"Look Strafe")					\
 		item (OPT_LOOKSPRING,			"Look Spring")					\
 		item (SPACER,					"")								\
+		item (OPT_LANGUAGE,				"Language")						\
+		item (SPACER,					"")								\
 		item (OPT_MUSICEXT,				"External Music")				\
 		item (OPT_WATERSNDFX,			"Water Muffling")				\
 	end_menu ()															\
@@ -3853,6 +3856,10 @@ void M_AdjustSliders (int dir)
 		Cvar_SetValueQuick (&lookspring, !lookspring.value);
 		break;
 
+	case OPT_LANGUAGE:
+		Cbuf_AddText (va ("cycle%s language auto english french german italian spanish\n", dir > 0 ? "" : "back"));
+		break;
+
 	case OPT_CONFIRMQUIT:
 		M_CycleCvar (&cl_confirmquit, 0, 2, dir);
 		break;
@@ -4318,6 +4325,10 @@ static void M_Options_DrawItem (int y, int item)
 
 	case OPT_STARTDEMOS:
 		M_DrawCheckbox (x, y, cl_startdemos.value);
+		break;
+
+	case OPT_LANGUAGE:
+		M_Print (x, y, language.string);
 		break;
 
 	case OPT_GAMMA:
