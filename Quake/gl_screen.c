@@ -209,7 +209,7 @@ static void SCR_DrawCenterStringBG (int y, float alpha)
 	const char *str;
 	int i, len, lines, x;
 
-	if (q_min (scr_center_lines, scr_center_maxcols) <= 0)
+	if (cl.intermission || q_min (scr_center_lines, scr_center_maxcols) <= 0 || alpha <= 0.f)
 		return;
 
 	// skip leading empty lines (might be there just to reposition the text)
