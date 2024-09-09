@@ -3531,7 +3531,7 @@ static qboolean M_Options_WantsConsole (void)
 
 static float M_Options_ForcedCenterPrint (void)
 {
-	return optionsmenu.preview.id == OPT_CENTERPRINTBG ? optionsmenu.preview.frac : 0.f;
+	return optionsmenu.preview.id == OPT_CENTERPRINTBG && !cl.intermission ? optionsmenu.preview.frac : 0.f;
 }
 
 static void M_Options_Preview (int id)
@@ -3555,6 +3555,11 @@ static void M_Options_Preview (int id)
 				break;
 
 			case OPT_CENTERPRINTBG:
+				if (cl.intermission)
+				{
+					id = -1;
+					break;
+				}
 				SCR_CenterPrint (
 					"Certain messages appear inconveniently\n"
 					"in the middle of your view. These are\n"
