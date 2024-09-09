@@ -1184,7 +1184,7 @@ OIT_OUTPUT (out_fragcolor)
 "	fog = clamp(fog, 0.0, 1.0);\n"
 "	result.rgb = mix(Fog.rgb, result.rgb, fog);\n"
 "	out_fragcolor = result;\n"
-"#if MODE == " QS_STRINGIFY (ALIASSHADER_DITHER) "\n"
+"#if MODE == " QS_STRINGIFY (ALIASSHADER_DITHER) " || MODE == " QS_STRINGIFY (ALIASSHADER_NOPERSP) "\n"
 "	// Note: sign bit is used as overbright flag\n"
 "	if (abs(Fog.w) > 0.)\n"
 "	{\n"
