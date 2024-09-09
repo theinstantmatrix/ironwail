@@ -82,6 +82,7 @@ float		scr_conlines;		// lines of console to display
 cvar_t		scr_menuscale = {"scr_menuscale", "1", CVAR_ARCHIVE};
 cvar_t		scr_menubgalpha = {"scr_menubgalpha", "0.7", CVAR_ARCHIVE};
 cvar_t		scr_menubgstyle = {"scr_menubgstyle", "-1", CVAR_ARCHIVE};
+cvar_t		scr_centerprintbg = {"scr_centerprintbg", "0", CVAR_ARCHIVE}; // 0 = off; 1 = text box; 2 = menu box; 3 = menu strip
 cvar_t		scr_sbarscale = {"scr_sbarscale", "1", CVAR_ARCHIVE};
 cvar_t		scr_sbaralpha = {"scr_sbaralpha", "0.75", CVAR_ARCHIVE};
 cvar_t		scr_conwidth = {"scr_conwidth", "0", CVAR_ARCHIVE};
@@ -155,6 +156,7 @@ char		scr_centerstring[1024];
 float		scr_centertime_start;	// for slow victory printing
 float		scr_centertime_off;
 int			scr_center_lines;
+int			scr_center_maxcols;
 int			scr_erase_lines;
 int			scr_erase_center;
 
@@ -168,7 +170,16 @@ for a few moments
 */
 void SCR_CenterPrint (const char *str) //update centerprint data
 {
-	strncpy (scr_centerstring, str, sizeof(scr_centerstring)-1);
+	int cols;
+
+	q_strlcpy (scr_centerstring, str, sizeof (scr_centerstring));
+	if (!scr_centerstring[0])
+	{
+		scr_center_lines = 0;
+		scr_center_maxcols = 0;
+		return;
+	}
+
 	scr_centertime_off = scr_centertime.value;
 	scr_centertime_start = cl.time;
 	if (!cl.intermission)
@@ -176,12 +187,72 @@ void SCR_CenterPrint (const char *str) //update centerprint data
 
 // count the number of lines for centering
 	scr_center_lines = 1;
+	scr_center_maxcols = 0;
 	str = scr_centerstring;
+	cols = 0;
 	while (*str)
 	{
 		if (*str == '\n')
+		{
 			scr_center_lines++;
+			scr_center_maxcols = q_max (scr_center_maxcols, cols);
+			cols = -1; // compensate the following ++
+		}
 		str++;
+		cols++;
+	}
+	scr_center_maxcols = q_max (scr_center_maxcols, cols);
+}
+
+static void SCR_DrawCenterStringBG (int y, float alpha)
+{
+	const char *str;
+	int i, len, lines, x;
+
+	if (q_min (scr_center_lines, scr_center_maxcols) <= 0)
+		return;
+
+	// skip leading empty lines (might be there just to reposition the text)
+	str = scr_centerstring;
+	while (*str == '\n')
+	{
+		str++;
+		y += CHARSIZE;
+	}
+
+	// skip trailing empty lines
+	len = (int) strlen (str);
+	while (len > 0 && str[len - 1] == '\n')
+		--len;
+
+	// count remaining lines
+	for (i = 0, lines = 1; i < len; i++)
+		if (str[i] == '\n')
+			lines++;
+
+	// draw the background
+	switch ((int)scr_centerprintbg.value)
+	{
+	case 1:
+		len = (scr_center_maxcols + 3) & ~1;
+		x = (320 - len * 8) / 2;
+		GL_PushCanvasColor (1.f, 1.f, 1.f, alpha * scr_menubgalpha.value);
+		M_DrawTextBox (x - 8, y - 12, len, lines + 1);
+		GL_PopCanvasColor ();
+		break;
+
+	case 2:
+		len = scr_center_maxcols + 2;
+		x = (320 - len* 8) / 2;
+		Draw_PartialFadeScreen (x, x + len * 8, y - 4, y + lines * 8 + 4, alpha);
+		break;
+
+	case 3:
+		Draw_PartialFadeScreen (glcanvas.left, glcanvas.right, y - 4, y + lines * 8 + 4, alpha);
+		break;
+
+	default:
+		return;
 	}
 }
 
@@ -192,7 +263,7 @@ void SCR_DrawCenterString (void) //actually do the drawing
 	int		j;
 	int		x, y;
 	int		remaining;
-	float	alpha;
+	float	alpha, forced;
 
 	GL_SetCanvas (CANVAS_MENU); //johnfitz
 
@@ -209,7 +280,11 @@ void SCR_DrawCenterString (void) //actually do the drawing
 		alpha = fade ? q_min (scr_centertime_off / fade, 1.f) : 1.f;
 	}
 
-	GL_SetCanvasColor (1.f, 1.f, 1.f, alpha);
+	forced = M_ForcedCenterPrint ();
+	if (forced > 0.f)
+		alpha *= forced * forced;
+
+	GL_PushCanvasColor (1.f, 1.f, 1.f, alpha);
 
 	scr_erase_center = 0;
 	start = scr_centerstring;
@@ -220,6 +295,8 @@ void SCR_DrawCenterString (void) //actually do the drawing
 		y = 48;
 	if (crosshair.value && scr_viewsize.value < 130)
 		y -= 8;
+
+	SCR_DrawCenterStringBG (y, alpha);
 
 	do
 	{
@@ -243,7 +320,7 @@ void SCR_DrawCenterString (void) //actually do the drawing
 		start++;		// skip the \n
 	} while (1);
 
-	GL_SetCanvasColor (1.f, 1.f, 1.f, 1.f);
+	GL_PopCanvasColor ();
 }
 
 void SCR_CheckDrawCenterString (void)
@@ -255,7 +332,7 @@ void SCR_CheckDrawCenterString (void)
 
 	if (scr_centertime_off <= 0 && !cl.intermission)
 		return;
-	if (key_dest != key_game)
+	if (key_dest != key_game && !M_ForcedCenterPrint ())
 		return;
 	if (cl.paused) //johnfitz -- don't show centerprint during a pause
 		return;
@@ -543,6 +620,7 @@ void SCR_Init (void)
 	Cvar_RegisterVariable (&scr_menuscale);
 	Cvar_RegisterVariable (&scr_menubgalpha);
 	Cvar_RegisterVariable (&scr_menubgstyle);
+	Cvar_RegisterVariable (&scr_centerprintbg);
 	Cvar_RegisterVariable (&scr_sbarscale);
 	Cvar_SetCallback (&scr_sbaralpha, SCR_Callback_refdef);
 	Cvar_RegisterVariable (&scr_sbaralpha);
@@ -1980,7 +2058,7 @@ void SCR_UpdateScreen (void)
 			Draw_ConsoleBackground ();
 		else
 			Sbar_Draw ();
-		Draw_FadeScreen ();
+		Draw_FadeScreen (1.f);
 		SCR_DrawNotifyString ();
 	}
 	else if (scr_drawloading) //loading

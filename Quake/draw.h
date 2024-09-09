@@ -44,8 +44,8 @@ void Draw_ConsoleBackground (void); //johnfitz -- removed parameter int lines
 void Draw_TileClear (int x, int y, int w, int h);
 void Draw_Fill (int x, int y, int w, int h, int c, float alpha); //johnfitz -- added alpha
 void Draw_FillEx (float x, float y, float w, float h, const float *rgb, float alpha);
-void Draw_PartialFadeScreen (float x0, float x1, float y0, float y1);
-void Draw_FadeScreen (void);
+void Draw_PartialFadeScreen (float x0, float x1, float y0, float y1, float alpha);
+void Draw_FadeScreen (float alpha);
 void Draw_String (int x, int y, const char *str);
 void Draw_StringEx (float x, float y, float dim, const char *str);
 qpic_t *Draw_PicFromWad2 (const char *name, unsigned int texflags);

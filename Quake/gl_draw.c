@@ -1002,14 +1002,15 @@ void Draw_Fill (int x, int y, int w, int h, int c, float alpha) //johnfitz -- ad
 Draw_PartialFadeScreen
 ================
 */
-void Draw_PartialFadeScreen (float x0, float x1, float y0, float y1)
+void Draw_PartialFadeScreen (float x0, float x1, float y0, float y1, float alpha)
 {
 	guivertex_t *verts;
 	int type;
 	float smax = 0.f, tmax = 0.f, s;
 	float u0, u1, v0, v1;
 
-	if (scr_menubgalpha.value <= 0.f)
+	alpha *= scr_menubgalpha.value;
+	if (alpha <= 0.f)
 		return;
 
 	u0 = GetFraction (x0, glcanvas.left, glcanvas.right);
@@ -1040,7 +1041,7 @@ void Draw_PartialFadeScreen (float x0, float x1, float y0, float y1)
 		Draw_SetTexture (whitetexture);
 		/* first pass */
 		Draw_SetBlending (GLS_BLEND_MULTIPLY);
-		s = 1.f - CLAMP (0.f, scr_menubgalpha.value, 0.5f) * 2.f;
+		s = 1.f - CLAMP (0.f, alpha, 0.5f) * 2.f;
 		clr[0] = LERP (0.56f, 1.f, s);
 		clr[1] = LERP (0.43f, 1.f, s);
 		clr[2] = LERP (0.13f, 1.f, s);
@@ -1052,7 +1053,7 @@ void Draw_PartialFadeScreen (float x0, float x1, float y0, float y1)
 		Draw_SetVertex (verts++, x0, y0, u0*smax, v0*tmax);
 		/* second pass */
 		Draw_SetBlending (GLS_BLEND_ALPHA);
-		s = CLAMP (0.f, scr_menubgalpha.value, 1.f);
+		s = CLAMP (0.f, alpha, 1.f);
 		s = (sqrt (s) + s) * 0.5f;	// ~0.6 with scr_menubgalpha 0.5
 		GL_SetCanvasColor (0.095f, 0.08f, 0.045f, s);
 	}
@@ -1069,16 +1070,16 @@ void Draw_PartialFadeScreen (float x0, float x1, float y0, float y1)
 		smax = glwidth / (winquakemenubg->width * s);
 		tmax = glheight / (winquakemenubg->height * s);
 		Draw_SetTexture (winquakemenubg);
-		if (scr_menubgalpha.value >= 0.5f)
+		if (alpha >= 0.5f)
 		{
 			Draw_SetBlending (GLS_BLEND_MULTIPLY);
-			s = 2.f - q_min (1.f, scr_menubgalpha.value) * 2.f;
+			s = 2.f - q_min (1.f, alpha) * 2.f;
 			GL_PushCanvasColor (s, s, s, 1.f);
 		}
 		else
 		{
 			Draw_SetBlending (GLS_BLEND_ALPHA);
-			s = q_max (0.f, scr_menubgalpha.value) * 2.f;
+			s = q_max (0.f, alpha) * 2.f;
 			GL_PushCanvasColor (0.f, 0.f, 0.f, s);
 		}
 	}
@@ -1086,7 +1087,7 @@ void Draw_PartialFadeScreen (float x0, float x1, float y0, float y1)
 	{
 		Draw_SetTexture (whitetexture);
 		Draw_SetBlending (GLS_BLEND_ALPHA);
-		GL_PushCanvasColor (0.f, 0.f, 0.f, scr_menubgalpha.value);
+		GL_PushCanvasColor (0.f, 0.f, 0.f, alpha);
 	}
 
 	verts = Draw_AllocQuad ();
@@ -1106,9 +1107,9 @@ void Draw_PartialFadeScreen (float x0, float x1, float y0, float y1)
 Draw_FadeScreen -- johnfitz -- revised
 ================
 */
-void Draw_FadeScreen (void)
+void Draw_FadeScreen (float alpha)
 {
-	Draw_PartialFadeScreen (glcanvas.left, glcanvas.right, glcanvas.top, glcanvas.bottom);
+	Draw_PartialFadeScreen (glcanvas.left, glcanvas.right, glcanvas.top, glcanvas.bottom, alpha);
 }
 
 /*

@@ -67,6 +67,7 @@ void M_Mousemove (int x, int y);
 enum textmode_t M_TextEntry (void);
 qboolean M_WaitingForKeyBinding (void);
 qboolean M_WantsConsole (void);
+float M_ForcedCenterPrint (void);
 void M_ToggleMenu_f (void);
 
 void M_RefreshMods (void);

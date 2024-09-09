@@ -3275,6 +3275,7 @@ void M_Menu_Gamepad_f (void)
 		item (SPACER,					"")								\
 		item (OPT_MENUBGSTYLE,			"Menu BG Style")				\
 		item (OPT_MENUBGALPHA,			"Menu BG Alpha")				\
+		item (OPT_CENTERPRINTBG,		"Center Text BG Style")			\
 		item (OPT_CONALPHA,				"Console Alpha")				\
 		item (OPT_CONBRIGHTNESS,		"Darken Console")				\
 		item (OPT_CONFIRMQUIT,			"Quit Prompt")					\
@@ -3528,6 +3529,11 @@ static qboolean M_Options_WantsConsole (void)
 	return optionsmenu.preview.id == OPT_CONALPHA || optionsmenu.preview.id == OPT_CONBRIGHTNESS;
 }
 
+static float M_Options_ForcedCenterPrint (void)
+{
+	return optionsmenu.preview.id == OPT_CENTERPRINTBG ? optionsmenu.preview.frac : 0.f;
+}
+
 static void M_Options_Preview (int id)
 {
 	if (cls.state == ca_connected && cls.signon == SIGNONS)
@@ -3546,6 +3552,15 @@ static void M_Options_Preview (int id)
 			case OPT_CONBRIGHTNESS:
 			case OPT_FOV:
 			case OPT_FOVDISTORT:
+				break;
+
+			case OPT_CENTERPRINTBG:
+				SCR_CenterPrint (
+					"Certain messages appear inconveniently\n"
+					"in the middle of your view. These are\n"
+					"always important, and you do not want\n"
+					"to ignore them!"
+				);
 				break;
 
 			default:
@@ -3577,6 +3592,9 @@ static void M_Options_Preview (int id)
 
 static void M_Options_ResetPreview (void)
 {
+	if (M_Options_ForcedCenterPrint ())
+		SCR_CenterPrint ("");
+
 	optionsmenu.preview.frac = 0.f;
 	optionsmenu.preview.id = -1;
 	optionsmenu.preview.frac_target = 0.f;
@@ -3947,6 +3965,9 @@ void M_AdjustSliders (int dir)
 	case OPT_CONBRIGHTNESS:
 		Cvar_SetValueQuick (&scr_conbrightness, CLAMP (0.0f, scr_conbrightness.value - dir * 0.1f, 1.f));
 		break;
+	case OPT_CENTERPRINTBG:
+		M_CycleCvar (&scr_centerprintbg, 0, 3, dir);
+		break;
 
 	//
 	// Gamepad Options
@@ -4313,6 +4334,17 @@ static void M_Options_DrawItem (int y, int item)
 		M_DrawCheckbox (x, y, ui_live_preview.value);
 		break;
 
+	case OPT_CENTERPRINTBG:
+		switch ((int)scr_centerprintbg.value)
+		{
+		case 1:		str = "Classic Box"; break;
+		case 2:		str = "Menu Box"; break;
+		case 3:		str = "Menu Strip"; break;
+		default:	str = "Off"; break;
+		}
+		M_Print (x, y, str);
+		break;
+
 	case OPT_CONFIRMQUIT:
 		if (!cl_confirmquit.value)
 			str = "Off";
@@ -4653,7 +4685,11 @@ static void M_Options_UpdatePreview (void)
 			optionsmenu.preview.frac -= host_rawframetime / PREVIEW_FADEIN_TIME;
 			optionsmenu.preview.frac = q_max (optionsmenu.preview.frac, optionsmenu.preview.frac_target);
 			if (optionsmenu.preview.frac == optionsmenu.preview.frac_target)
+			{
+				if (M_Options_ForcedCenterPrint ())
+					SCR_CenterPrint ("");
 				optionsmenu.preview.id = -1;
+			}
 		}
 	}
 	else if (optionsmenu.preview.hold_time > 0.f && !slider_grab)
@@ -4669,7 +4705,7 @@ static void M_Options_UpdatePreview (void)
 
 /*
 ================
-M_Options_DrawFadeScreen
+M_Options_DrawConsole
 ================
 */
 static void M_Options_DrawConsole (void)
@@ -4705,7 +4741,7 @@ static void M_Options_DrawFadeScreen (void)
 		y1 = LERP (y1, y + CHARSIZE, frac);
 	}
 
-	Draw_PartialFadeScreen (glcanvas.left, glcanvas.right, y0, y1);
+	Draw_PartialFadeScreen (glcanvas.left, glcanvas.right, y0, y1, 1.f);
 }
 
 void M_Options_Draw (void)
@@ -7129,7 +7165,7 @@ void M_Draw (void)
 		if (M_GetBaseState (m_state) == m_options)
 			M_Options_DrawFadeScreen ();
 		else
-			Draw_FadeScreen ();
+			Draw_FadeScreen (1.f);
 	}
 	else
 	{
@@ -7515,6 +7551,11 @@ qboolean M_WaitingForKeyBinding (void)
 qboolean M_WantsConsole (void)
 {
 	return key_dest == key_menu && M_GetBaseState (m_state) == m_options && M_Options_WantsConsole ();
+}
+
+float M_ForcedCenterPrint (void)
+{
+	return key_dest == key_menu && M_GetBaseState (m_state) == m_options ? M_Options_ForcedCenterPrint () : 0.f;
 }
 
 

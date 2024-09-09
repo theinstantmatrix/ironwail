@@ -99,6 +99,7 @@ typedef enum menubg_t
 extern	cvar_t		scr_menuscale;
 extern	cvar_t		scr_menubgalpha;
 extern	cvar_t		scr_menubgstyle;
+extern	cvar_t		scr_centerprintbg;
 extern	cvar_t		scr_sbarscale;
 extern	cvar_t		scr_conwidth;
 extern	cvar_t		scr_conscale;
