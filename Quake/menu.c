@@ -3529,9 +3529,14 @@ static qboolean M_Options_WantsConsole (void)
 	return optionsmenu.preview.id == OPT_CONALPHA || optionsmenu.preview.id == OPT_CONBRIGHTNESS;
 }
 
-static float M_Options_ForcedCenterPrint (void)
+static qboolean M_Options_ForcedCenterPrint (void)
 {
-	return optionsmenu.preview.id == OPT_CENTERPRINTBG && !cl.intermission ? optionsmenu.preview.frac : 0.f;
+	return optionsmenu.preview.id == OPT_CENTERPRINTBG && !cl.intermission;
+}
+
+static float M_Options_PreviewAlpha (void)
+{
+	return optionsmenu.preview.frac;
 }
 
 static void M_Options_Preview (int id)
@@ -7558,9 +7563,12 @@ qboolean M_WantsConsole (void)
 	return key_dest == key_menu && M_GetBaseState (m_state) == m_options && M_Options_WantsConsole ();
 }
 
-float M_ForcedCenterPrint (void)
+qboolean M_ForcedCenterPrint (float *alpha)
 {
-	return key_dest == key_menu && M_GetBaseState (m_state) == m_options ? M_Options_ForcedCenterPrint () : 0.f;
+	qboolean forced = (key_dest == key_menu && M_GetBaseState (m_state) == m_options) ? M_Options_ForcedCenterPrint () : false;
+	if (alpha)
+		*alpha = forced ? M_Options_PreviewAlpha () : 0.f;
+	return forced;
 }
 
 

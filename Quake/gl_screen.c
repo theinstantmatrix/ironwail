@@ -263,7 +263,7 @@ void SCR_DrawCenterString (void) //actually do the drawing
 	int		j;
 	int		x, y;
 	int		remaining;
-	float	alpha, forced;
+	float	alpha, forcedalpha;
 
 	GL_SetCanvas (CANVAS_MENU); //johnfitz
 
@@ -280,9 +280,8 @@ void SCR_DrawCenterString (void) //actually do the drawing
 		alpha = fade ? q_min (scr_centertime_off / fade, 1.f) : 1.f;
 	}
 
-	forced = M_ForcedCenterPrint ();
-	if (forced > 0.f)
-		alpha *= forced * forced;
+	if (M_ForcedCenterPrint (&forcedalpha))
+		alpha *= forcedalpha * forcedalpha;
 
 	GL_PushCanvasColor (1.f, 1.f, 1.f, alpha);
 
@@ -332,7 +331,7 @@ void SCR_CheckDrawCenterString (void)
 
 	if (scr_centertime_off <= 0 && !cl.intermission)
 		return;
-	if (key_dest != key_game && !M_ForcedCenterPrint ())
+	if (key_dest != key_game && !M_ForcedCenterPrint (NULL))
 		return;
 	if (cl.paused) //johnfitz -- don't show centerprint during a pause
 		return;
