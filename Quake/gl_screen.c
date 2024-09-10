@@ -331,10 +331,13 @@ void SCR_CheckDrawCenterString (void)
 
 	if (scr_centertime_off <= 0 && !cl.intermission)
 		return;
-	if (key_dest != key_game && !M_ForcedCenterPrint (NULL))
-		return;
-	if (cl.paused) //johnfitz -- don't show centerprint during a pause
-		return;
+	if (!M_ForcedCenterPrint (NULL))
+	{
+		if (key_dest != key_game)
+			return;
+		if (cl.paused) //johnfitz -- don't show centerprint during a pause
+			return;
+	}
 
 	SCR_DrawCenterString ();
 }
@@ -1058,6 +1061,7 @@ DrawPause
 void SCR_DrawPause (void)
 {
 	qpic_t	*pic;
+	float	alpha;
 
 	if (!cl.paused)
 		return;
@@ -1065,10 +1069,22 @@ void SCR_DrawPause (void)
 	if (!scr_showpause.value)		// turn off for screenshots
 		return;
 
+	if (M_ForcedCenterPrint (&alpha))
+	{
+		alpha = 1.f - alpha;
+		if (alpha <= 0.f)
+			return;
+	}
+	else
+		alpha = 1.f;
+
 	GL_SetCanvas (CANVAS_MENU); //johnfitz
+	GL_PushCanvasColor (1.f, 1.f, 1.f, alpha);
 
 	pic = Draw_CachePic ("gfx/pause.lmp");
 	Draw_Pic ( (320 - pic->width)/2, (240 - 48 - pic->height)/2, pic); //johnfitz -- stretched menus
+
+	GL_PopCanvasColor ();
 
 	scr_tileclear_updates = 0; //johnfitz
 }
