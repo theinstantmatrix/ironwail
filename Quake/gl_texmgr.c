@@ -326,6 +326,16 @@ static void TexMgr_ForceFilterUpdate (void)
 
 /*
 ===============
+TexMgr_UsesFilterOverride
+===============
+*/
+qboolean TexMgr_UsesFilterOverride (void)
+{
+	return softemu >= SOFTEMU_COARSE || r_softemu_lightmap_banding.value > 0.f;
+}
+
+/*
+===============
 TexMgr_ApplySettings -- called at the beginning of each frame
 ===============
 */
@@ -339,7 +349,7 @@ void TexMgr_ApplySettings (void)
 	gl_texfilter.lodbias	= lodbias;
 
 	// if softemu is either 2 & 3 or r_softemu_lightmap_banding is > 0 we override the filtering mode, unless it's GL_NEAREST
-	if (gl_texfilter.mode != 0 && (softemu >= SOFTEMU_COARSE || r_softemu_lightmap_banding.value > 0.f))
+	if (gl_texfilter.mode != 0 && TexMgr_UsesFilterOverride ())
 	{
 		const float SOFTEMU_ANISOTROPY = 8.f;
 		gl_texfilter.mode = 2; // nearest with linear mips

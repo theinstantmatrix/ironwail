@@ -2934,11 +2934,17 @@ VID_Menu_GetTexFilterDesc
 */
 static const char *VID_Menu_GetTexFilterDesc (void)
 {
-	const char *current = Cvar_VariableString ("gl_texturemode");
+	const char *current;
 	int i;
+
+	if (TexMgr_UsesFilterOverride ())
+		return "Classic";
+
+	current = Cvar_VariableString ("gl_texturemode");
 	for (i = 0; i < countof (texfilters); i++)
 		if (!q_strcasecmp (current, texfilters[i][0]))
 			return texfilters[i][1];
+
 	return "";
 }
 
@@ -3490,6 +3496,8 @@ static qboolean M_Options_IsEnabled (int index)
 	index += optionsmenu.first_item;
 	if ((unsigned int) index >= countof (options_names))
 		return false;
+	if (index == OPT_TEXFILTER || index == OPT_ANISO)
+		return !TexMgr_UsesFilterOverride ();
 	if (index > GAMEPAD_OPTIONS_BEGIN && index < GAMEPAD_OPTIONS_END && !IN_HasGamepad ())
 		return false;
 	if (index == GPAD_OPT_RUMBLE && !IN_HasRumble ())
