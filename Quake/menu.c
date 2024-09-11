@@ -4760,7 +4760,7 @@ void M_Options_Draw (void)
 	int firstvis, numvis;
 	int i, x, y, cols;
 	int option;
-	float f;
+	float alpha;
 	qpic_t	*p;
 
 	if (slider_grab && !keydown[K_MOUSE1])
@@ -4781,8 +4781,9 @@ void M_Options_Draw (void)
 	y = optionsmenu.y;
 	cols = 32;
 
-	f = 1.f - optionsmenu.preview.frac;
-	GL_PushCanvasColor (1.f, 1.f, 1.f, f * f);
+	alpha = 1.f - optionsmenu.preview.frac;
+	alpha *= alpha;
+	GL_PushCanvasColor (1.f, 1.f, 1.f, alpha);
 
 	M_DrawTransPic (16, 4, Draw_CachePic ("gfx/qplaque.lmp") );
 	p = Draw_CachePic ("gfx/p_option.lmp");
@@ -4814,7 +4815,7 @@ void M_Options_Draw (void)
 		if (enabled != wasenabled)
 		{
 			float val = enabled ? 1.f : 0.375f;
-			GL_SetCanvasColor (val, val, val, 1.f);
+			GL_SetCanvasColor (val, val, val, alpha);
 			wasenabled = enabled;
 		}
 
