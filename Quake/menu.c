@@ -2895,38 +2895,6 @@ static void VID_Menu_ChooseNextAnisotropy (int dir)
 	Cvar_SetValueQuick (&gl_texture_anisotropy, CLAMP (1, aniso, (int)gl_max_anisotropy));
 }
 
-static const char *const texfilters[][2] =
-{
-	{"gl_nearest_mipmap_linear", "Classic"},
-	{"gl_linear_mipmap_linear", "Smooth"},
-};
-
-/*
-================
-VID_Menu_ChooseNextTexFilter
-
-chooses next texture filter, then updates gl_texturemode cvar
-================
-*/
-static void VID_Menu_ChooseNextTexFilter (void)
-{
-	const char *filter = gl_texturemode.string;
-	int i;
-
-	for (i = 0; i < countof (texfilters); i++)
-	{
-		if (!q_strcasecmp (filter, texfilters[i][0]))
-		{
-			filter = texfilters[(i + 1) % countof (texfilters)][0];
-			break;
-		}
-	}
-	if (i == countof (texfilters))
-		filter = texfilters[0][0];
-
-	Cvar_SetQuick (&gl_texturemode, filter);
-}
-
 /*
 ================
 VID_Menu_GetTexFilterDesc
@@ -2934,17 +2902,8 @@ VID_Menu_GetTexFilterDesc
 */
 static const char *VID_Menu_GetTexFilterDesc (void)
 {
-	const char *current;
-	int i;
-
-	if (TexMgr_UsesFilterOverride ())
-		return "Classic";
-
-	current = Cvar_VariableString ("gl_texturemode");
-	for (i = 0; i < countof (texfilters); i++)
-		if (!q_strcasecmp (current, texfilters[i][0]))
-			return texfilters[i][1];
-
+	if ((unsigned int) gl_texfilter.mode < (unsigned int)NUM_GLMODES)
+		return glmodes[gl_texfilter.mode].uiname;
 	return "";
 }
 
@@ -3932,7 +3891,7 @@ void M_AdjustSliders (int dir)
 		VID_Menu_ChooseNextAnisotropy (-dir);
 		break;
 	case OPT_TEXFILTER:
-		VID_Menu_ChooseNextTexFilter ();
+		Cbuf_AddText ("cycle gl_texturemode GL_NEAREST_MIPMAP_LINEAR GL_LINEAR_MIPMAP_LINEAR\n");
 		break;
 	case OPT_MD5:
 		Cbuf_AddText ("toggle r_md5\n");
@@ -4529,8 +4488,8 @@ static void M_Options_DrawItem (int y, int item)
 		M_DrawSlider (x, y, r, r_refdef.scale >= 2 ? va("1/%i", r_refdef.scale) : "Off");
 		break;
 	case OPT_ANISO:
-		M_Print (x, y, gl_texture_anisotropy.value >= 2.f ?
-			va("%ix", q_min ((int)gl_texture_anisotropy.value, (int)gl_max_anisotropy)) :
+		M_Print (x, y, gl_texfilter.anisotropy >= 2.f ?
+			va("%ix", q_min ((int)gl_texfilter.anisotropy, (int)gl_max_anisotropy)) :
 			"Off"
 		);
 		break;

@@ -81,33 +81,21 @@ static void GL_DeleteTexture (gltexture_t *texture);
 ================================================================================
 */
 
-typedef struct
+const glmode_t glmodes[NUM_GLMODES] =
 {
-	int	magfilter;
-	int	minfilter;
-	const char  *name;
-} glmode_t;
-static const glmode_t glmodes[] = {
-	{GL_NEAREST, GL_NEAREST,		"GL_NEAREST"},
-	{GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST,	"GL_NEAREST_MIPMAP_NEAREST"},
-	{GL_NEAREST, GL_NEAREST_MIPMAP_LINEAR,	"GL_NEAREST_MIPMAP_LINEAR"},
-	{GL_LINEAR,  GL_LINEAR,			"GL_LINEAR"},
-	{GL_LINEAR,  GL_LINEAR_MIPMAP_NEAREST,	"GL_LINEAR_MIPMAP_NEAREST"},
-	{GL_LINEAR,  GL_LINEAR_MIPMAP_LINEAR,	"GL_LINEAR_MIPMAP_LINEAR"},
+	{GL_NEAREST, GL_NEAREST,					"GL_NEAREST",					"Classic"},
+	{GL_NEAREST, GL_NEAREST_MIPMAP_NEAREST,		"GL_NEAREST_MIPMAP_NEAREST",	"Classic"},
+	{GL_NEAREST, GL_NEAREST_MIPMAP_LINEAR,		"GL_NEAREST_MIPMAP_LINEAR",		"Classic"},
+	{GL_LINEAR,  GL_LINEAR,						"GL_LINEAR",					"Smooth"},
+	{GL_LINEAR,  GL_LINEAR_MIPMAP_NEAREST,		"GL_LINEAR_MIPMAP_NEAREST",		"Smooth"},
+	{GL_LINEAR,  GL_LINEAR_MIPMAP_LINEAR,		"GL_LINEAR_MIPMAP_LINEAR",		"Smooth"},
 };
-#define NUM_GLMODES (int)Q_COUNTOF(glmodes)
 static int glmode_idx = 2; /* nearest with linear mips */
 
 static GLuint gl_samplers[NUM_GLMODES * 2]; // x2: nomip + mip
 
-typedef struct texfilter_s
-{
-	int		mode;
-	float	anisotropy;
-	float	lodbias;
-} texfilter_t;
+texfilter_t gl_texfilter;
 
-static texfilter_t gl_texfilter;
 
 /*
 ===============
