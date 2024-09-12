@@ -3238,9 +3238,9 @@ void M_Menu_Gamepad_f (void)
 		item (OPT_SHOWTIME,				"Show Time")					\
 		item (OPT_SHOWFPS,				"Show FPS")						\
 		item (SPACER,					"")								\
-		item (OPT_MENUBGSTYLE,			"Menu BG Style")				\
-		item (OPT_MENUBGALPHA,			"Menu BG Alpha")				\
-		item (OPT_CENTERPRINTBG,		"Center Text BG Style")			\
+		item (OPT_MENUBGSTYLE,			"Background")					\
+		item (OPT_MENUBGALPHA,			"BG Alpha")						\
+		item (OPT_CENTERPRINTBG,		"Center Text BG")				\
 		item (OPT_CONALPHA,				"Console Alpha")				\
 		item (OPT_CONBRIGHTNESS,		"Darken Console")				\
 		item (OPT_CONFIRMQUIT,			"Quit Prompt")					\
