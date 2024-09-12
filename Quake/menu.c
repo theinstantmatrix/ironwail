@@ -2850,21 +2850,11 @@ chooses next AA level in order, then updates vid_fsaa cvar
 */
 static void VID_Menu_ChooseNextAA (int dir)
 {
-	int samples = Q_nextPow2 (framebufs.scene.samples);
-
+	int samples = framebufs.scene.samples;
 	if (dir < 0)
-	{
 		samples <<= 1;
-		if (samples > framebufs.max_samples)
-			samples = 1;
-	}
 	else
-	{
 		samples >>= 1;
-		if (samples < 1)
-			samples = framebufs.max_samples;
-	}
-
 	Cvar_SetValueQuick (&vid_fsaa, CLAMP (1, samples, framebufs.max_samples));
 }
 
@@ -2877,21 +2867,11 @@ chooses next anisotropy level in order, then updates gl_texture_anisotropy cvar
 */
 static void VID_Menu_ChooseNextAnisotropy (int dir)
 {
-	int aniso = Q_nextPow2 (q_max (1, (int)gl_texture_anisotropy.value));
-
+	int aniso = (int)gl_texture_anisotropy.value;
 	if (dir < 0)
-	{
 		aniso <<= 1;
-		if (aniso > gl_max_anisotropy)
-			aniso = 1;
-	}
 	else
-	{
 		aniso >>= 1;
-		if (aniso < 1)
-			aniso = gl_max_anisotropy;
-	}
-
 	Cvar_SetValueQuick (&gl_texture_anisotropy, CLAMP (1, aniso, (int)gl_max_anisotropy));
 }
 
@@ -4116,6 +4096,14 @@ qboolean M_SetSliderValue (int option, float f)
 		f = floor (1 + f * (vid.maxscale - 1) + 0.5);
 		Cvar_SetValueQuick (&r_scale, f);
 		return true;
+	case OPT_ANISO:
+		f = Exp2f (floor (f * Log2f (gl_max_anisotropy) + 0.5f));
+		Cvar_SetValueQuick (&gl_texture_anisotropy, CLAMP (1, (int)f, (int)gl_max_anisotropy));
+		return true;
+	case OPT_FSAA:
+		f = Exp2f (floor (f * Log2f (framebufs.max_samples) + 0.5f));
+		Cvar_SetValueQuick (&vid_fsaa, CLAMP (1, (int)f, framebufs.max_samples));
+		return true;
 	case OPT_MOUSESPEED:	// mouse speed
 		f = f * 10.f + 1.f;
 		Cvar_SetValue ("sensitivity", f);
@@ -4478,7 +4466,8 @@ static void M_Options_DrawItem (int y, int item)
 		M_DrawCheckbox (x, y, (int)vid_vsync.value);
 		break;
 	case OPT_FSAA:
-		M_Print (x, y, framebufs.scene.samples >= 2 ? va("%ix", framebufs.scene.samples) : "Off");
+		r = GetLogFraction (framebufs.scene.samples, 1.f, framebufs.max_samples);
+		M_DrawSlider (x, y, r, framebufs.scene.samples >= 2 ? va("%ix", framebufs.scene.samples) : "Off");
 		break;
 	case OPT_FSAA_MODE:
 		M_Print (x, y, vid_fsaamode.value ? "Full" : "Edges only");
@@ -4488,10 +4477,8 @@ static void M_Options_DrawItem (int y, int item)
 		M_DrawSlider (x, y, r, r_refdef.scale >= 2 ? va("1/%i", r_refdef.scale) : "Off");
 		break;
 	case OPT_ANISO:
-		M_Print (x, y, gl_texfilter.anisotropy >= 2.f ?
-			va("%ix", q_min ((int)gl_texfilter.anisotropy, (int)gl_max_anisotropy)) :
-			"Off"
-		);
+		r = GetLogFraction (gl_texfilter.anisotropy, 1.f, gl_max_anisotropy);
+		M_DrawSlider (x, y, r, gl_texfilter.anisotropy >= 2.f ? va("%ix", (int)gl_texfilter.anisotropy) : "Off");
 		break;
 	case OPT_TEXFILTER:
 		M_Print (x, y, VID_Menu_GetTexFilterDesc ());
