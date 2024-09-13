@@ -1481,7 +1481,7 @@ void SCR_SetUpToDrawConsole (void)
 		scr_conlines = 0; //none visible
 
 	timescale = (host_timescale.value > 0) ? host_timescale.value : 1; //johnfitz -- timescale
-	conspeed = (scr_conspeed.value > 0) ? scr_conspeed.value : 1e6f;
+	conspeed = (scr_conspeed.value > 0 && !cls.timedemo) ? scr_conspeed.value : 1e6f;
 
 	// make sure the console isn't too slow to come down if we're forcing it open to preview a specific option
 	if (key_dest == key_menu)
