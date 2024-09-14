@@ -207,7 +207,7 @@ void M_Options_Init (enum m_state_e state);
 
 #define PREVIEW_FADEIN_TIME				0.125
 #define PREVIEW_FADEOUT_TIME			0.125
-#define PREVIEW_HOLD_TIME				0.875
+#define PREVIEW_HOLD_TIME				1.5
 
 #define SEARCH_FADE_TIMEOUT				0.5
 #define SEARCH_TYPE_TIMEOUT				1.5
@@ -3479,6 +3479,11 @@ static qboolean M_Options_WantsConsole (void)
 static qboolean M_Options_ForcedCenterPrint (void)
 {
 	return optionsmenu.preview.id == OPT_CENTERPRINTBG && !cl.intermission;
+}
+
+static qboolean M_Options_ForcedUnderwater (void)
+{
+	return optionsmenu.preview.id == OPT_WATERWARP;
 }
 
 static float M_Options_PreviewAlpha (void)
@@ -7526,6 +7531,10 @@ qboolean M_ForcedCenterPrint (float *alpha)
 	return forced;
 }
 
+qboolean M_ForcedUnderwater (void)
+{
+	return key_dest == key_menu && M_GetBaseState (m_state) == m_options && M_Options_ForcedUnderwater ();
+}
 
 void M_ConfigureNetSubsystem(void)
 {

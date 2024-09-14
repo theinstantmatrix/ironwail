@@ -974,13 +974,15 @@ void R_SetupView (void)
 	if (r_waterwarp.value)
 	{
 		int contents = Mod_PointInLeaf (r_origin, cl.worldmodel)->contents;
-		if (contents == CONTENTS_WATER || contents == CONTENTS_SLIME || contents == CONTENTS_LAVA || cl.forceunderwater)
+		qboolean forced = M_ForcedUnderwater ();
+		if (contents == CONTENTS_WATER || contents == CONTENTS_SLIME || contents == CONTENTS_LAVA || cl.forceunderwater || forced)
 		{
+			double t = forced ? realtime : cl.time;
 			if (r_waterwarp.value > 1.f)
 			{
 				//variance is a percentage of width, where width = 2 * tan(fov / 2) otherwise the effect is too dramatic at high FOV and too subtle at low FOV.  what a mess!
-				r_fovx = atan(tan(DEG2RAD(r_refdef.fov_x) / 2) * (0.97 + sin(cl.time * 1.5) * 0.03)) * 2 / M_PI_DIV_180;
-				r_fovy = atan(tan(DEG2RAD(r_refdef.fov_y) / 2) * (1.03 - sin(cl.time * 1.5) * 0.03)) * 2 / M_PI_DIV_180;
+				r_fovx = atan(tan(DEG2RAD(r_refdef.fov_x) / 2) * (0.97 + sin(t * 1.5) * 0.03)) * 2 / M_PI_DIV_180;
+				r_fovy = atan(tan(DEG2RAD(r_refdef.fov_y) / 2) * (1.03 - sin(t * 1.5) * 0.03)) * 2 / M_PI_DIV_180;
 			}
 			else
 			{
@@ -1775,6 +1777,7 @@ void R_WarpScaleView (void)
 	qboolean msaa = framebufs.scene.samples > 1;
 	qboolean needwarpscale;
 	GLuint fbodest;
+	double t;
 
 	if (!GL_NeedsSceneEffects ())
 		return;
@@ -1820,7 +1823,8 @@ void R_WarpScaleView (void)
 	GL_UseProgram (glprogs.warpscale[water_warp]);
 	GL_SetState (GLS_BLEND_OPAQUE | GLS_NO_ZTEST | GLS_NO_ZWRITE | GLS_CULL_NONE | GLS_ATTRIBS(0));
 
-	GL_Uniform4fFunc (0, smax, tmax, water_warp ? 1.f/256.f : 0.f, cl.time);
+	t = M_ForcedUnderwater () ? realtime : cl.time;
+	GL_Uniform4fFunc (0, smax, tmax, water_warp ? 1.f/256.f : 0.f, (float)t);
 	if (v_blend[3] && gl_polyblend.value && !softemu)
 		GL_Uniform4fvFunc (1, 1, v_blend);
 	else
