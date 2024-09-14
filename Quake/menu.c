@@ -207,7 +207,8 @@ void M_Options_Init (enum m_state_e state);
 
 #define PREVIEW_FADEIN_TIME				0.125
 #define PREVIEW_FADEOUT_TIME			0.125
-#define PREVIEW_HOLD_TIME				1.5
+#define PREVIEW_HOLD_TIME				1.25
+#define PREVIEW_LONG_HOLD_TIME			2.25
 
 #define SEARCH_FADE_TIMEOUT				0.5
 #define SEARCH_TYPE_TIMEOUT				1.5
@@ -3549,7 +3550,7 @@ static void M_Options_Preview (int id)
 
 	optionsmenu.preview.id = id;
 	optionsmenu.preview.frac_target = 1.f;
-	optionsmenu.preview.hold_time = PREVIEW_HOLD_TIME;
+	optionsmenu.preview.hold_time = (id == OPT_WATERWARP) ? PREVIEW_LONG_HOLD_TIME : PREVIEW_HOLD_TIME;
 }
 
 static void M_Options_ResetPreview (void)
