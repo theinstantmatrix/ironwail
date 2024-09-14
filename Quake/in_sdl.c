@@ -154,9 +154,6 @@ static int SDLCALL IN_SDL2_FilterMouseEvents (void *userdata, SDL_Event *event)
 
 void IN_ShowCursor (void)
 {
-	SDL_Window *window;
-	int width, height;
-
 	VID_SetMouseCursor (MOUSECURSOR_DEFAULT);
 
 	if (!SDL_GetRelativeMouseMode ())
@@ -164,9 +161,13 @@ void IN_ShowCursor (void)
 	if (SDL_SetRelativeMouseMode (SDL_FALSE) != 0)
 		Con_Printf ("WARNING: could not disable relative mouse mode (%s).\n", SDL_GetError ());
 
-	window = (SDL_Window *) VID_GetWindow ();
-	SDL_GetWindowSize (window, &width, &height);
-	SDL_WarpMouseInWindow (window, width/2, height/2);
+	if (!ui_mouse.value)
+	{
+		SDL_Window *window = (SDL_Window *) VID_GetWindow ();
+		int width, height;
+		SDL_GetWindowSize (window, &width, &height);
+		SDL_WarpMouseInWindow (window, width/2, height/2);
+	}
 }
 
 void IN_HideCursor (void)
