@@ -595,25 +595,16 @@ based on textmode and the device type
 */
 static void IN_UpdateSDLTextInput (void)
 {
-	if (SDL_HasScreenKeyboardSupport ())
-	{
-		// Devices with an on-screen keyboard (e.g. Steam Deck) don't receive text input events by default.
-		// In order to have a functional console we need to call SDL_StartTextInput when text mode is explicitly requested.
-		// When text mode is optional, but we'd rather not have an on-screen keyboard pop up (e.g. maps & options menus),
-		// we need call SDL_StopTextInput.
-		if (textmode == TEXTMODE_ON)
-			SDL_StartTextInput ();
-		else
-			SDL_StopTextInput ();
-	}
+	// For devices with an on-screen keyboard (e.g. Steam Deck) we only start text input
+	// if requested explicitly (TEXTMODE_ON) in order to avoid having the OSK pop up
+	// in searchable menus (Options, Maps, or Mods), which use emulated char events instead.
+	// For all the other devices we start text input if not disabled explicitly (TEXTMODE_OFF).
+	// In other words, TEXTMODE_NOPOPUP is treated as OFF on Steam Deck, ON on desktop.
+	qboolean enabled = SDL_HasScreenKeyboardSupport () ? textmode == TEXTMODE_ON : textmode != TEXTMODE_OFF;
+	if (enabled)
+		SDL_StartTextInput ();
 	else
-	{
-		// Desktop devices (without on-screen keyboards) receive text inputs by default.
-		// We only call SDL_StartTextInput if for some reason text input got deactivated
-		// (which shouldn't happen if SDL_StopTextInput is not called).
-		if (textmode == TEXTMODE_ON && !SDL_IsTextInputActive ())
-			SDL_StartTextInput ();
-	}
+		SDL_StopTextInput ();
 }
 
 /*
