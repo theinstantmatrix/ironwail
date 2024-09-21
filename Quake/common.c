@@ -3768,7 +3768,7 @@ fail:			mz_zip_reader_end(&archive);
 		}
 	}
 
-	Con_Printf("Loaded %d strings from '%s'\n", localization.numentries, file);
+	Con_SafePrintf ("[skipnotify]Loaded %d strings from '%s'\n", localization.numentries, file);
 
 	return true;
 }
