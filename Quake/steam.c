@@ -295,6 +295,22 @@ static void ACF_OnManifestProperty (vdbcontext_t *ctx, const char *key, const ch
 
 /*
 ========================
+Steam_IsValidPath
+
+Returns true if the given path contains a valid Steam install
+(based on the existence of a config/libraryfolders.vdf file)
+========================
+*/
+qboolean Steam_IsValidPath (const char *path)
+{
+	char libpath[MAX_OSPATH];
+	if ((size_t) q_snprintf (libpath, sizeof (libpath), "%s/config/libraryfolders.vdf", path) >= sizeof (libpath))
+		return false;
+	return Sys_FileType (libpath) == FS_ENT_FILE;
+}
+
+/*
+========================
 Steam_ReadLibFolders
 
 Returns malloc'ed buffer with Steam library folders config

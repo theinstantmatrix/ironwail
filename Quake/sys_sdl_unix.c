@@ -309,10 +309,8 @@ static int Sys_NumCPUs (void)
 
 qboolean Sys_GetSteamDir (char *path, size_t pathsize)
 {
-	const char	STEAM_DIR[] = ".steam/steam";
-	const char	*home_dir = NULL;
+	const char		*home_dir = NULL;
 	struct passwd	*pwent;
-	struct stat		st;
 
 	pwent = getpwuid( getuid() );
 	if (pwent == NULL)
@@ -324,10 +322,16 @@ qboolean Sys_GetSteamDir (char *path, size_t pathsize)
 	if (home_dir == NULL)
 		return false;
 
-	if ((size_t) q_snprintf (path, pathsize, "%s/%s", home_dir, STEAM_DIR) >= pathsize)
-		return false;
+	if ((size_t) q_snprintf (path, pathsize, "%s/.steam/steam", home_dir) < pathsize && Steam_IsValidPath (path))
+		return true;
+	if ((size_t) q_snprintf (path, pathsize, "%s/.local/share/Steam", home_dir) < pathsize && Steam_IsValidPath (path))
+		return true;
+	if ((size_t) q_snprintf (path, pathsize, "%s/.var/app/com.valvesoftware.Steam/.steam/steam", home_dir) < pathsize && Steam_IsValidPath (path))
+		return true;
+	if ((size_t) q_snprintf (path, pathsize, "%s/.var/app/com.valvesoftware.Steam/.local/share/Steam", home_dir) < pathsize && Steam_IsValidPath (path))
+		return true;
 
-	return stat (path, &st) == 0 && S_ISDIR (st.st_mode);
+	return false;
 }
 
 qboolean Sys_GetSteamQuakeUserDir (char *path, size_t pathsize, const char *library)

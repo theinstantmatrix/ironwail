@@ -38,6 +38,7 @@ typedef struct steamgame_s {
 	char	library[MAX_OSPATH];
 } steamgame_t;
 
+qboolean			Steam_IsValidPath (const char *path);
 qboolean			Steam_FindGame (steamgame_t *game, int appid);
 qboolean			Steam_ResolvePath (char *path, size_t pathsize, const steamgame_t *game);
 
