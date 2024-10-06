@@ -4644,19 +4644,6 @@ static void M_Options_UpdatePreview (void)
 
 /*
 ================
-M_Options_DrawConsole
-================
-*/
-static void M_Options_DrawConsole (void)
-{
-	Draw_ConsoleBackground ();
-	GL_PushCanvasColor (1.f, 1.f, 1.f, optionsmenu.preview.frac);
-	Con_DrawConsole (scr_con_current, false, false);
-	GL_PopCanvasColor ();
-}
-
-/*
-================
 M_Options_DrawFadeScreen
 ================
 */
@@ -7091,16 +7078,6 @@ void M_Draw (void)
 
 	if (!m_recursiveDraw)
 	{
-		if (scr_con_current)
-		{
-			if (options)
-				M_Options_DrawConsole ();
-			else
-				Draw_ConsoleBackground ();
-
-			S_ExtraUpdate ();
-		}
-
 		//johnfitz -- fade even if console fills screen
 		if (M_GetBaseState (m_state) == m_options)
 			M_Options_DrawFadeScreen ();
@@ -7488,9 +7465,12 @@ qboolean M_WaitingForKeyBinding (void)
 	return key_dest == key_menu && m_state == m_keys && bind_grab;
 }
 
-qboolean M_WantsConsole (void)
+qboolean M_WantsConsole (float *alpha)
 {
-	return key_dest == key_menu && M_GetBaseState (m_state) == m_options && M_Options_WantsConsole ();
+	qboolean forced = (key_dest == key_menu && M_GetBaseState (m_state) == m_options && M_Options_WantsConsole ());
+	if (alpha)
+		*alpha = forced ? M_Options_PreviewAlpha () : 0.f;
+	return forced;
 }
 
 qboolean M_ForcedCenterPrint (float *alpha)

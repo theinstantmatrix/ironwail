@@ -1475,7 +1475,7 @@ void SCR_SetUpToDrawConsole (void)
 		scr_conlines = glheight; //full screen //johnfitz -- glheight instead of vid.height
 		scr_con_current = scr_conlines;
 	}
-	else if (key_dest == key_console || M_WantsConsole ())
+	else if (key_dest == key_console || M_WantsConsole (NULL))
 		scr_conlines = glheight/2; //half screen //johnfitz -- glheight instead of vid.height
 	else
 		scr_conlines = 0; //none visible
@@ -1518,7 +1518,10 @@ void SCR_DrawConsole (void)
 {
 	if (scr_con_current)
 	{
-		Con_DrawConsole (scr_con_current, true, true);
+		if (key_dest != key_menu || (!con_forcedup || M_WantsConsole (NULL)))
+			Con_DrawConsole (scr_con_current, true, key_dest == key_console);
+		else
+			Draw_ConsoleBackground ();
 		clearconsole = 0;
 	}
 	else
@@ -1847,7 +1850,9 @@ void SCR_BeginLoadingPlaque (void)
 	if (key_dest != key_console)
 	{
 		Con_ClearNotify ();
-		scr_con_current = 0;
+		// don't reset console when advancing to a new demo while previewing a console option
+		if (!M_WantsConsole (NULL))
+			scr_con_current = 0;
 		scr_drawloading = true;
 	}
 

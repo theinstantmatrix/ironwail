@@ -66,7 +66,7 @@ void M_Charinput (int key);
 void M_Mousemove (int x, int y);
 enum textmode_t M_TextEntry (void);
 qboolean M_WaitingForKeyBinding (void);
-qboolean M_WantsConsole (void);
+qboolean M_WantsConsole (float *alpha);
 qboolean M_ForcedCenterPrint (float *alpha);
 qboolean M_ForcedUnderwater (void);
 void M_ToggleMenu_f (void);

@@ -2260,7 +2260,7 @@ void Con_DrawInput (void)
 Con_DrawSelectionHighlight
 ================
 */
-void Con_DrawSelectionHighlight (int x, int y, int line)
+static void Con_DrawSelectionHighlight (int x, int y, int line, float alpha)
 {
 	conofs_t	selbegin, selend;
 	conofs_t	begin, end;
@@ -2285,7 +2285,7 @@ void Con_DrawSelectionHighlight (int x, int y, int line)
 	if (!Con_IntersectRanges (&begin, &end, &selbegin, &selend))
 		return;
 
-	Draw_Fill (x + begin.col*8, y, (end.col-begin.col)*8, 8, 220, 1.f);
+	Draw_Fill (x + begin.col*8, y, (end.col-begin.col)*8, 8, 220, alpha);
 }
 
 /*
@@ -2300,6 +2300,8 @@ void Con_DrawConsole (int lines, qboolean drawbg, qboolean drawinput)
 {
 	int	i, x, y, j, sb, rows;
 	const char	*text;
+	qboolean forced;
+	float alpha;
 
 	Con_UpdateMouseState ();
 
@@ -2313,6 +2315,12 @@ void Con_DrawConsole (int lines, qboolean drawbg, qboolean drawinput)
 	if (drawbg)
 		Draw_ConsoleBackground ();
 
+// fade out during live previews for console options when there's no active game
+	forced = con_forcedup && M_WantsConsole (&alpha);
+	if (!forced)
+		alpha = 1.f;
+	GL_PushCanvasColor (1.f, 1.f, 1.f, alpha);
+
 // draw the buffer text
 	rows = (con_vislines +7)/8;
 	y = vid.conheight - rows*8;
@@ -2325,7 +2333,7 @@ void Con_DrawConsole (int lines, qboolean drawbg, qboolean drawinput)
 		if (j < 0)
 			j = 0;
 		text = con_text + (j % con_totallines)*con_linewidth;
-		Con_DrawSelectionHighlight (8, y, j);
+		Con_DrawSelectionHighlight (8, y, j, alpha);
 	}
 
 	y = vid.conheight - (rows+2)*8; // +2 for input and version lines
@@ -2367,6 +2375,8 @@ void Con_DrawConsole (int lines, qboolean drawbg, qboolean drawinput)
 //draw version number in bottom right
 	text = CONSOLE_TITLE_STRING;
 	M_PrintWhite (vid.conwidth - (strlen (text) << 3), vid.conheight - 8, text);
+
+	GL_PopCanvasColor ();
 }
 
 
