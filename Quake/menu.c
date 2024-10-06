@@ -2983,7 +2983,7 @@ VID_Menu_GetAlphaModeDesc
 */
 static const char *VID_Menu_GetAlphaModeDesc (void)
 {
-	switch (R_GetAlphaMode ())
+	switch (R_GetEffectiveAlphaMode ())
 	{
 	case ALPHAMODE_BASIC:		return "Basic";
 	case ALPHAMODE_SORTED:		return "Dynamic";
@@ -3410,6 +3410,8 @@ static qboolean M_Options_IsEnabled (int index)
 	if (index > GAMEPAD_OPTIONS_BEGIN && index < GAMEPAD_OPTIONS_END && !IN_HasGamepad ())
 		return false;
 	if (index == GPAD_OPT_RUMBLE && !IN_HasRumble ())
+		return false;
+	if (index == OPT_ALPHAMODE && map_checks.value)
 		return false;
 	if (M_Options_IsGyroId (index))
 	{
