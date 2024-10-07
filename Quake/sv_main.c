@@ -1714,7 +1714,7 @@ typedef enum
 SV_MapCheckThresh
 ================
 */
-static SV_MapCheckThresh (int current, int target)
+static mapcheck_t SV_MapCheckThresh (int current, int target)
 {
 	if (current <= 0)
 		return MAPCHECK_FAILED;
