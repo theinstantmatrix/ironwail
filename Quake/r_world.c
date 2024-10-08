@@ -475,6 +475,8 @@ static void R_DrawBrushModels_Real (entity_t **ents, int count, brushpass_t pass
 		entity_t *e = ents[i++];
 		qmodel_t *model = e->model;
 		qboolean isworld = (e == &cl_entities[0]);
+		qboolean isstatic = PTR_IN_RANGE (e, cl_static_entities, cl_static_entities + MAX_STATIC_ENTITIES);
+		qboolean zfix = !isworld && !isstatic;
 		int frame = isworld ? 0 : e->frame;
 		int numtex = model->texofs[texend] - model->texofs[texbegin];
 
@@ -487,7 +489,7 @@ static void R_DrawBrushModels_Real (entity_t **ents, int count, brushpass_t pass
 		for (j = model->texofs[texbegin]; j < model->texofs[texend]; j++)
 		{
 			texture_t *t = model->textures[model->usedtextures[j]];
-			R_AddBModelCall (model->firstcmd + j, baseinst, numinst, pass != BP_SHOWTRIS ? R_TextureAnimation (t, frame) : 0, !isworld);
+			R_AddBModelCall (model->firstcmd + j, baseinst, numinst, pass != BP_SHOWTRIS ? R_TextureAnimation (t, frame) : 0, zfix);
 		}
 
 		baseinst += numinst;
