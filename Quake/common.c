@@ -215,6 +215,12 @@ void MultiString_Append (char **pvec, const char *str)
 	Vec_Append ((void **)pvec, 1, str, strlen (str) + 1);
 }
 
+void MultiString_AppendN (char **pvec, const char *str, size_t len)
+{
+	Vec_Append ((void **)pvec, 1, str, len);
+	VEC_PUSH (*pvec, '\0');
+}
+
 /*
 ============================================================================
 
@@ -666,7 +672,6 @@ float Q_atof (const char *str)
 
 	return val*sign;
 }
-
 
 /*
 ==============================================================================
@@ -1407,6 +1412,32 @@ Return NULL in case of overflow
 const char *COM_Parse (const char *data)
 {
 	return COM_ParseEx (data, CPE_NOTRUNC);
+}
+
+
+/*
+================
+COM_ParseLine
+================
+*/
+qboolean COM_ParseLine (const char **str, stringview_t *line)
+{
+	const char *p;
+
+	if (!str || !*str)
+		return false;
+
+	p = *str;
+	if (line)
+		line->data = p;
+	while (*p && *p != '\n')
+		p++;
+	if (line)
+		line->len = p - line->data;
+
+	*str = (*p == '\n') ? p + 1 : NULL;
+
+	return true;
 }
 
 

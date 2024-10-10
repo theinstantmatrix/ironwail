@@ -1433,12 +1433,23 @@ void SCR_DrawEdictInfo (void)
 		// Add all relevant fields, excluding classname (already added to the header)
 		for (i = 1; i < qcvm->progs->numfielddefs; i++)
 		{
-			ddef_t *d = &qcvm->fielddefs[i];
+			stringview_t	line;
+			const char		*val;
+			ddef_t			*d = &qcvm->fielddefs[i];
+
 			if (d->ofs*4 == offsetof (entvars_t, classname) || !ED_IsRelevantField (ed, d))
 				continue;
+
 			COM_TintString (PR_GetString (d->s_name), tinted, sizeof (tinted));
-			MultiString_Append (&scr_edictoverlaystrings, tinted);
-			MultiString_Append (&scr_edictoverlaystrings, ED_FieldValueString (ed, d));
+			val = ED_FieldValueString (ed, d);
+
+			while (COM_ParseLine (&val, &line))
+			{
+				MultiString_Append (&scr_edictoverlaystrings, tinted);
+				MultiString_AppendN (&scr_edictoverlaystrings, line.data, line.len);
+				tinted[0] = ' ';
+				tinted[1] = '\0';
+			}
 		}
 
 		SCR_DrawKeyValueOverlay (x, y, scr_edictoverlaystrings, rgb_black);
