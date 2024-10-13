@@ -58,6 +58,9 @@ qboolean use_simd;
 
 extern gltexture_t *playertextures[MAX_SCOREBOARD]; //johnfitz
 
+extern char r_showbboxes_filter_strings[MAXCMDLINE];
+extern qboolean r_showbboxes_filter_byindex;
+
 /*
 ====================
 R_ShowbboxesFilter_f
@@ -65,9 +68,6 @@ R_ShowbboxesFilter_f
 */
 static void R_ShowbboxesFilter_f (void)
 {
-	extern char r_showbboxes_filter_strings[MAXCMDLINE];
-	extern qboolean r_showbboxes_filter_byindex;
-
 	if (Cmd_Argc () >= 2)
 	{
 		int i, len, ofs;
@@ -102,6 +102,17 @@ static void R_ShowbboxesFilter_f (void)
 		} while (*p);
 		Con_SafePrintf ("\n");
 	}
+}
+
+/*
+====================
+R_ShowbboxesFilterClear_f
+====================
+*/
+static void R_ShowbboxesFilterClear_f (void)
+{
+	r_showbboxes_filter_strings[0] = '\0';
+	r_showbboxes_filter_byindex = false;
 }
 
 /*
@@ -234,6 +245,7 @@ void R_Init (void)
 	Cmd_AddCommand ("timerefresh", R_TimeRefresh_f);
 	Cmd_AddCommand ("pointfile", R_ReadPointFile_f);
 	Cmd_AddCommand ("r_showbboxes_filter", R_ShowbboxesFilter_f);
+	Cmd_AddCommand ("r_showbboxes_filter_clear", R_ShowbboxesFilterClear_f);
 
 	Cvar_RegisterVariable (&r_norefresh);
 	Cvar_RegisterVariable (&r_lightmap);
