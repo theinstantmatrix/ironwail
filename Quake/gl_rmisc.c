@@ -106,6 +106,48 @@ static void R_ShowbboxesFilter_f (void)
 
 /*
 ====================
+R_ShowbboxesFilter_Completion_f -- tab completion for r_showbboxes_filter
+====================
+*/
+static void R_ShowbboxesFilter_Completion_f (const char *partial)
+{
+	extern edict_t *sv_player;
+	extern edict_t **bbox_linked;
+	qcvm_t	*oldvm;
+	edict_t	*ed;
+	int		i;
+
+	if (!sv.active)
+		return;
+
+	PR_PushQCVM (&sv.qcvm, &oldvm);
+
+	if (*partial == '#')
+	{
+		for (i = 0; i < (int) VEC_SIZE (bbox_linked); i++)
+		{
+			edict_t *ed = bbox_linked[i];
+			Con_AddToTabList (va ("#%d", NUM_FOR_EDICT (ed)), partial, PR_GetString (ed->v.classname));
+		}
+	}
+	else
+	{
+		for (i = 1, ed = NEXT_EDICT (qcvm->edicts); i < qcvm->num_edicts; i++, ed = NEXT_EDICT (ed))
+		{
+			const char *name;
+			if (ed == sv_player || ed->free || !ed->v.classname)
+				continue;
+			name = PR_GetString (ed->v.classname);
+			if (*name)
+				Con_AddToTabList (name, partial, "#");
+		}
+	}
+
+	PR_PopQCVM (oldvm);
+}
+
+/*
+====================
 R_ShowbboxesFilterClear_f
 ====================
 */
@@ -242,9 +284,13 @@ R_Init
 */
 void R_Init (void)
 {
+	cmd_function_t *cmd;
+
 	Cmd_AddCommand ("timerefresh", R_TimeRefresh_f);
 	Cmd_AddCommand ("pointfile", R_ReadPointFile_f);
-	Cmd_AddCommand ("r_showbboxes_filter", R_ShowbboxesFilter_f);
+	cmd = Cmd_AddCommand ("r_showbboxes_filter", R_ShowbboxesFilter_f);
+	if (cmd)
+		cmd->completion = R_ShowbboxesFilter_Completion_f;
 	Cmd_AddCommand ("r_showbboxes_filter_clear", R_ShowbboxesFilterClear_f);
 
 	Cvar_RegisterVariable (&r_norefresh);
