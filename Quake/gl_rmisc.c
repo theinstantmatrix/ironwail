@@ -66,10 +66,12 @@ R_ShowbboxesFilter_f
 static void R_ShowbboxesFilter_f (void)
 {
 	extern char r_showbboxes_filter_strings[MAXCMDLINE];
+	extern qboolean r_showbboxes_filter_byindex;
 
 	if (Cmd_Argc () >= 2)
 	{
 		int i, len, ofs;
+		r_showbboxes_filter_byindex = false;
 		for (i = 1, ofs = 0; i < Cmd_Argc (); i++)
 		{
 			const char *arg = Cmd_Argv (i);
@@ -81,6 +83,7 @@ static void R_ShowbboxesFilter_f (void)
 				Con_Warning ("overflow at \"%s\"\n", arg);
 				break;
 			}
+			r_showbboxes_filter_byindex |= (arg[0] == '#');
 			memcpy (&r_showbboxes_filter_strings[ofs], arg, len);
 			ofs += len;
 		}

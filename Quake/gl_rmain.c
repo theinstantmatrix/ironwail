@@ -1367,39 +1367,47 @@ r_showbboxes_filter artifact =trigger_secret #42
 ================
 */
 char r_showbboxes_filter_strings[MAXCMDLINE];
+qboolean r_showbboxes_filter_byindex;
 
 static qboolean R_ShowBoundingBoxesFilter (edict_t *ed)
 {
-	char entnum[16];
+	char entnum[16] = "";
 	const char *classname = NULL;
 	const char *filter_p = r_showbboxes_filter_strings;
-	qboolean is_allowed = false;
 
 	if (!r_showbboxes_filter_strings[0])
 		return true;
 
-	sprintf (entnum, "%d", NUM_FOR_EDICT(ed));
+	if (r_showbboxes_filter_byindex)
+		q_snprintf (entnum, sizeof (entnum), "%d", NUM_FOR_EDICT (ed));
 
 	if (ed->v.classname)
 		classname = PR_GetString (ed->v.classname);
 
-	while (*filter_p && !is_allowed)
+	for (filter_p = r_showbboxes_filter_strings; *filter_p; filter_p += strlen (filter_p) + 1)
 	{
 		if (*filter_p == '#')
-			is_allowed = !strcmp (entnum, filter_p + 1);
-
-		if (!is_allowed && classname)
 		{
-			if (*filter_p == '=')
-				is_allowed = !strcmp (classname, filter_p + 1);
-			else
-				is_allowed = strstr (classname, filter_p) != NULL;
+			if (!strcmp (entnum, filter_p + 1))
+				return true;
+			continue;
 		}
 
-		filter_p += strlen (filter_p) + 1;
+		if (!classname)
+			continue;
+
+		if (*filter_p == '=')
+		{
+			if (!strcmp (classname, filter_p + 1))
+				return true;
+			continue;
+		}
+
+		if (strstr (classname, filter_p) != NULL)
+			return true;
 	}
 
-	return is_allowed;
+	return false;
 }
 
 static edict_t **bbox_edicts = NULL;		// all edicts shown by r_showbboxes & co
