@@ -126,7 +126,7 @@ static void R_ShowbboxesFilter_Completion_f (const char *partial)
 	{
 		for (i = 0; i < (int) VEC_SIZE (bbox_linked); i++)
 		{
-			edict_t *ed = bbox_linked[i];
+			ed = bbox_linked[i];
 			Con_AddToTabList (va ("#%d", NUM_FOR_EDICT (ed)), partial, PR_GetString (ed->v.classname));
 		}
 	}
