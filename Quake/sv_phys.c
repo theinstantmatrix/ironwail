@@ -492,9 +492,9 @@ void SV_PushMove (edict_t *pusher, float movetime)
 			__m128 check_absmax_vec = _mm_loadu_ps (check->v.absmax);
 			__m128 maxs_vec = _mm_loadu_ps (maxs);
 			__m128 mins_vec = _mm_loadu_ps (mins);
-			if (_mm_movemask_ps (_mm_cmpngt_ps (check_absmin_vec, maxs_vec)) & 7)
+			if (_mm_movemask_ps (_mm_cmpnlt_ps (check_absmin_vec, maxs_vec)) & 7)
 				continue;
-			if (_mm_movemask_ps (_mm_cmpnlt_ps (check_absmax_vec, mins_vec)) & 7)
+			if (_mm_movemask_ps (_mm_cmpngt_ps (check_absmax_vec, mins_vec)) & 7)
 				continue;
 #else
 			if ( check->v.absmin[0] >= maxs[0]
