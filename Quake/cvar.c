@@ -599,7 +599,7 @@ void Cvar_RegisterVariable (cvar_t *variable)
 // link the variable in
 	//johnfitz -- insert each entry in alphabetical order
 	for (i = 0; i < cvar_count; i++)
-		if (strcmp (variable->name, cvar_list[i]->name) > 0)
+		if (strcmp (variable->name, cvar_list[i]->name) < 0)
 			break;
 	if (i < cvar_count)
 	{
