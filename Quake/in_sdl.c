@@ -71,6 +71,7 @@ cvar_t	joy_flick_deadzone = { "joy_flick_deadzone", "0.9", CVAR_ARCHIVE };
 cvar_t	joy_flick_noise_thresh = { "joy_flick_noise_thresh", "2.0", CVAR_ARCHIVE };
 cvar_t	joy_rumble = { "joy_rumble", "0.3", CVAR_ARCHIVE };
 cvar_t	joy_device = { "joy_device", "0", CVAR_ARCHIVE };
+cvar_t	joy_always_active = { "joy_always_active", "0", CVAR_ARCHIVE };
 
 cvar_t gyro_enable = {"gyro_enable", "1", CVAR_ARCHIVE};
 cvar_t gyro_mode = {"gyro_mode", "2", CVAR_ARCHIVE}; // 2 = GYRO_BUTTON_DISABLES (see gyromode_t)
@@ -649,6 +650,7 @@ void IN_Init (void)
 	Cvar_RegisterVariable(&joy_device);
 	Cvar_SetCallback(&joy_device, Joy_Device_f);
 	Cvar_SetCompletion(&joy_device, Joy_Device_Completion_f);
+	Cvar_RegisterVariable(&joy_always_active);
 
 	Cvar_RegisterVariable(&gyro_enable);
 	Cvar_RegisterVariable(&gyro_mode);
@@ -877,6 +879,27 @@ static void IN_JoyKeyEvent(qboolean wasdown, qboolean isdown, int key, double *t
 	}
 }
 
+static joyaxis_t IN_GetLookAxis (joyaxisstate_t *state)
+{
+	joyaxis_t axis;
+	axis.x = state->axisvalue[joy_swapmovelook.value ? SDL_CONTROLLER_AXIS_LEFTX : SDL_CONTROLLER_AXIS_RIGHTX];
+	axis.y = state->axisvalue[joy_swapmovelook.value ? SDL_CONTROLLER_AXIS_LEFTY : SDL_CONTROLLER_AXIS_RIGHTY];
+	return axis;
+}
+
+static joyaxis_t IN_GetMoveAxis (joyaxisstate_t *state)
+{
+	joyaxis_t axis;
+	axis.x = state->axisvalue[joy_swapmovelook.value ? SDL_CONTROLLER_AXIS_RIGHTX : SDL_CONTROLLER_AXIS_LEFTX];
+	axis.y = state->axisvalue[joy_swapmovelook.value ? SDL_CONTROLLER_AXIS_RIGHTY : SDL_CONTROLLER_AXIS_LEFTY];
+	return axis;
+}
+
+static qboolean IN_JoyActive (void)
+{
+	return joy_active_controller != NULL && (joy_always_active.value || lastactivetype == KD_GAMEPAD);
+}
+
 /*
 ================
 IN_Commands
@@ -914,12 +937,18 @@ void IN_Commands (void)
 	// emit emulated arrow keys so the analog sticks can be used in the menu
 	if (key_dest != key_game)
 	{
-		int xaxis = joy_swapmovelook.value ? SDL_CONTROLLER_AXIS_RIGHTX : SDL_CONTROLLER_AXIS_LEFTX;
-		int yaxis = joy_swapmovelook.value ? SDL_CONTROLLER_AXIS_RIGHTY : SDL_CONTROLLER_AXIS_LEFTY;
-		IN_JoyKeyEvent(joy_axisstate.axisvalue[xaxis] < -stickthreshold, newaxisstate.axisvalue[xaxis] < -stickthreshold, K_LEFTARROW, &joy_emulatedkeytimer[0]);
-		IN_JoyKeyEvent(joy_axisstate.axisvalue[xaxis] > stickthreshold,  newaxisstate.axisvalue[xaxis] > stickthreshold, K_RIGHTARROW, &joy_emulatedkeytimer[1]);
-		IN_JoyKeyEvent(joy_axisstate.axisvalue[yaxis] < -stickthreshold, newaxisstate.axisvalue[yaxis] < -stickthreshold, K_UPARROW, &joy_emulatedkeytimer[2]);
-		IN_JoyKeyEvent(joy_axisstate.axisvalue[yaxis] > stickthreshold,  newaxisstate.axisvalue[yaxis] > stickthreshold, K_DOWNARROW, &joy_emulatedkeytimer[3]);
+		joyaxis_t old_move = IN_GetMoveAxis (&joy_axisstate);
+		joyaxis_t new_move = IN_GetMoveAxis (&newaxisstate);
+		IN_JoyKeyEvent(old_move.x < -stickthreshold, new_move.x < -stickthreshold, K_LEFTARROW,		&joy_emulatedkeytimer[0]);
+		IN_JoyKeyEvent(old_move.x >  stickthreshold, new_move.x >  stickthreshold, K_RIGHTARROW,	&joy_emulatedkeytimer[1]);
+		IN_JoyKeyEvent(old_move.y < -stickthreshold, new_move.y < -stickthreshold, K_UPARROW,		&joy_emulatedkeytimer[2]);
+		IN_JoyKeyEvent(old_move.y >  stickthreshold, new_move.y >  stickthreshold, K_DOWNARROW,		&joy_emulatedkeytimer[3]);
+	}
+	else if (lastactivetype != KD_GAMEPAD)
+	{
+		if (IN_AxisMagnitude (IN_GetLookAxis (&newaxisstate)) > joy_deadzone_look.value ||
+			IN_AxisMagnitude (IN_GetMoveAxis (&newaxisstate)) > joy_deadzone_move.value)
+			lastactivetype = KD_GAMEPAD;
 	}
 
 	// scroll console with look stick
@@ -932,8 +961,7 @@ void IN_Commands (void)
 		joyaxis_t raw, deadzone, eased;
 		float scale;
 
-		raw.x = newaxisstate.axisvalue[joy_swapmovelook.value ? SDL_CONTROLLER_AXIS_LEFTX : SDL_CONTROLLER_AXIS_RIGHTX];
-		raw.y = newaxisstate.axisvalue[joy_swapmovelook.value ? SDL_CONTROLLER_AXIS_LEFTY : SDL_CONTROLLER_AXIS_RIGHTY];
+		raw = IN_GetLookAxis (&newaxisstate);
 		deadzone = IN_ApplyDeadzone (raw, joy_deadzone_look.value, joy_outer_threshold_look.value);
 		eased = IN_ApplyEasing (deadzone, joy_exponent.value);
 		if (joy_invert.value)
@@ -964,7 +992,7 @@ void IN_Commands (void)
 	joy_axisstate = newaxisstate;
 
 #if SDL_VERSION_ATLEAST (2, 0, 9)
-	if (joy_has_rumble && !IN_IsCalibratingGyro () && joy_rumble.value > 0.f)
+	if (joy_has_rumble && !IN_IsCalibratingGyro () && joy_rumble.value > 0.f && IN_JoyActive ())
 	{
 		float strength = CLAMP (0.f, joy_rumble.value, 1.f) * 0xffff;
 		float lofreq = GetClampedFraction (S_GetLoFreqLevel (), 0.067f, 0.45f);
@@ -1001,21 +1029,12 @@ void IN_JoyMove (usercmd_t *cmd)
 
 	if (!joy_active_controller)
 		return;
-	
+
 	if (cl.paused || key_dest != key_game)
 		return;
 
-	moveRaw.x = joy_axisstate.axisvalue[SDL_CONTROLLER_AXIS_LEFTX];
-	moveRaw.y = joy_axisstate.axisvalue[SDL_CONTROLLER_AXIS_LEFTY];
-	lookRaw.x = joy_axisstate.axisvalue[SDL_CONTROLLER_AXIS_RIGHTX];
-	lookRaw.y = joy_axisstate.axisvalue[SDL_CONTROLLER_AXIS_RIGHTY];
-	
-	if (joy_swapmovelook.value)
-	{
-		joyaxis_t temp = moveRaw;
-		moveRaw = lookRaw;
-		lookRaw = temp;
-	}
+	moveRaw = IN_GetMoveAxis (&joy_axisstate);
+	lookRaw = IN_GetLookAxis (&joy_axisstate);
 
 	moveDeadzone = IN_ApplyDeadzone(moveRaw, joy_deadzone_move.value, joy_outer_threshold_move.value);
 	lookDeadzone = IN_ApplyDeadzone(lookRaw, joy_deadzone_look.value, joy_outer_threshold_look.value);
@@ -1123,7 +1142,7 @@ void IN_GyroMove(usercmd_t *cmd)
 	if (!gyro_enable.value)
 		return;
 
-	if (!joy_active_controller)
+	if (!IN_JoyActive ())
 		return;
 
 	if (cl.paused || key_dest != key_game)
