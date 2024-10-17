@@ -3137,7 +3137,7 @@ void M_Menu_Gamepad_f (void)
 		item (OPT_INTERFACE,			"Interface")					\
 		item (SPACER,					"")								\
 		item (OPT_CUSTOMIZE,			"Key Setup")					\
-		item (OPT_GAMEPAD,				"Gamepad")						\
+		item (OPT_GAMEPAD,				"Controller")					\
 		item (OPT_MOUSESPEED,			"Mouse Speed")					\
 		item (OPT_INVMOUSE,				"Invert Mouse")					\
 		item (OPT_SNDVOL,				"Sound Volume")					\
@@ -3196,7 +3196,7 @@ void M_Menu_Gamepad_f (void)
 		item (OPT_CONFIRMQUIT,			"Quit Prompt")					\
 		item (OPT_STARTDEMOS,			"Start Demos")					\
 	end_menu ()															\
-	begin_menu (GAMEPAD_OPTIONS, m_gamepad, TITLE("Gamepad"))			\
+	begin_menu (GAMEPAD_OPTIONS, m_gamepad, TITLE("Controller"))		\
 		item (GPAD_OPT_DEVICE,			"Device")						\
 		item (SPACER,					"")								\
 		item (SPACER,					"")								\
