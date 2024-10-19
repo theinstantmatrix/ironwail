@@ -111,7 +111,8 @@ byte *Image_LoadImage (const char *name, int *width, int *height, enum srcformat
 
 	for (i = 0; stbi_formats[i]; i++)
 	{
-		q_snprintf (loadfilename, sizeof(loadfilename), "%s.%s", name, stbi_formats[i]);
+		const char *ext = stbi_formats[i];
+		q_snprintf (loadfilename, sizeof(loadfilename), "%s.%s", name, ext);
 		COM_FOpenFile (loadfilename, &f, NULL);
 		if (f)
 		{
@@ -119,11 +120,13 @@ byte *Image_LoadImage (const char *name, int *width, int *height, enum srcformat
 			if (data)
 			{
 				int numbytes = (*width) * (*height) * 4;
-				byte *hunkdata = (byte *) Hunk_AllocName (numbytes, stbi_formats[i]);
+				byte *hunkdata = (byte *) Hunk_AllocName (numbytes, ext);
 				memcpy (hunkdata, data, numbytes);
 				free (data);
 				data = hunkdata;
 				*fmt = SRC_RGBA;
+				if ((developer.value || map_checks.value) && strcmp (ext, "tga") != 0)
+					Con_Warning ("%s not supported by QS, consider tga\n", loadfilename);
 			}
 			else
 				Con_Warning ("couldn't load %s (%s)\n", loadfilename, stbi_failure_reason ());
