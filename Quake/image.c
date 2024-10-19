@@ -120,7 +120,7 @@ byte *Image_LoadImage (const char *name, int *width, int *height, enum srcformat
 			if (data)
 			{
 				int numbytes = (*width) * (*height) * 4;
-				byte *hunkdata = (byte *) Hunk_AllocName (numbytes, ext);
+				byte *hunkdata = (byte *) Hunk_AllocNameNoFill (numbytes, ext);
 				memcpy (hunkdata, data, numbytes);
 				free (data);
 				data = hunkdata;
@@ -272,7 +272,7 @@ static byte *Image_LoadPCX (FILE *f, int *width, int *height)
 	w = pcx.xmax - pcx.xmin + 1;
 	h = pcx.ymax - pcx.ymin + 1;
 
-	data = (byte *) Hunk_Alloc((w*h+1)*4); //+1 to allow reading padding byte on last line
+	data = (byte *) Hunk_AllocNoFill ((w*h+1)*4); //+1 to allow reading padding byte on last line
 
 	//load palette
 	fseek (f, start + com_filesize - 768, SEEK_SET);
@@ -360,7 +360,7 @@ static byte *Image_LoadLMP (FILE *f, int *width, int *height)
 	}
 
 	mark = Hunk_LowMark ();
-	data = (byte *) Hunk_Alloc (pix);
+	data = (byte *) Hunk_AllocNoFill (pix);
 	if (fread (data, 1, pix, f) != pix)
 	{
 		Hunk_FreeToLowMark (mark);
