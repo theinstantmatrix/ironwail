@@ -448,7 +448,7 @@ qboolean Sys_GetEGSManifestDir (char *path, size_t pathsize)
 
 const char *Sys_GetEGSLauncherData (void)
 {
-	char		path[MAX_PATH];
+	char		path[MAX_OSPATH];
 	char		*buf;
 	FILE		*file;
 	int64_t		filesize;
@@ -655,7 +655,7 @@ static void Sys_FillFindData (winfindfile_t *find)
 findfile_t *Sys_FindFirst (const char *dir, const char *ext)
 {
 	winfindfile_t		*ret;
-	char				pattern[MAX_PATH];
+	char				pattern[MAX_OSPATH];
 	wchar_t				wpattern[MAX_PATH];
 	HANDLE				handle;
 	WIN32_FIND_DATAW	data;
