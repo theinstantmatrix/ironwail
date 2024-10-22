@@ -3200,6 +3200,17 @@ static void Mod_LoadAliasModel (qmodel_t *mod, void *buffer)
 	daliasskintype_t	*pskintype;
 	int					start, end, total;
 
+	start = Hunk_LowMark ();
+
+	pinmodel = (mdl_t *)buffer;
+	mod_base = (byte *)buffer; //johnfitz
+
+	version = LittleLong (pinmodel->version);
+	if (version != ALIAS_VERSION)
+		Sys_Error ("%s has wrong version number (%i should be %i)",
+			mod->name, version, ALIAS_VERSION);
+	mod->flags = LittleLong (pinmodel->flags);
+
 	if (r_md5.value)
 	{
 		COM_StripExtension (mod->name, path, sizeof (path));
@@ -3217,16 +3228,6 @@ static void Mod_LoadAliasModel (qmodel_t *mod, void *buffer)
 		}
 	}
 
-	start = Hunk_LowMark ();
-
-	pinmodel = (mdl_t *)buffer;
-	mod_base = (byte *)buffer; //johnfitz
-
-	version = LittleLong (pinmodel->version);
-	if (version != ALIAS_VERSION)
-		Sys_Error ("%s has wrong version number (%i should be %i)",
-				 mod->name, version, ALIAS_VERSION);
-
 //
 // allocate space for a working header, plus all the data except the frames,
 // skin and group info
@@ -3234,8 +3235,6 @@ static void Mod_LoadAliasModel (qmodel_t *mod, void *buffer)
 	size	= sizeof(aliashdr_t) +
 		 (LittleLong (pinmodel->numframes) - 1) * sizeof (pheader->frames[0]);
 	pheader = (aliashdr_t *) Hunk_AllocName (size, loadname);
-
-	mod->flags = LittleLong (pinmodel->flags);
 
 //
 // endian-adjust and copy the data, starting with the alias model header
@@ -3885,24 +3884,6 @@ static void MD5_ComputeNormals(iqmvert_t *vert, size_t numverts, unsigned short 
 	free (hashmap);
 }
 
-static unsigned int MD5_HackyModelFlags(const char *name)
-{
-	unsigned int ret = 0;
-	char oldmodel[MAX_QPATH];
-	mdl_t *f;
-	COM_StripExtension(name, oldmodel, sizeof(oldmodel));
-	COM_AddExtension(oldmodel, ".mdl", sizeof(oldmodel));
-
-	f = (mdl_t*)COM_LoadMallocFile(oldmodel, NULL);
-	if (f)
-	{
-		if (com_filesize >= sizeof(*f) && LittleLong(f->ident) == IDPOLYHEADER && LittleLong(f->version) == ALIAS_VERSION)
-			ret = f->flags;
-		free(f);
-	}
-	return ret;
-}
-
 typedef struct
 {
 	char *animfile;
@@ -4324,8 +4305,7 @@ static void Mod_LoadMD5MeshModel (qmodel_t *mod, const char *buffer)
 
 	GLMesh_LoadVertexBuffer (mod, outhdr);
 
-	//the md5 format does not have its own modelflags, yet we still need to know about trails and rotating etc
-	mod->flags = MD5_HackyModelFlags(mod->name);
+	// Note: the md5 format does not have its own modelflags, yet we still need to know about trails and rotating etc, so we reuse the flags from the mdl version.
 
 	mod->synctype = ST_FRAMETIME;	//keep IQM animations synced to when .frame is changed. framegroups are otherwise not very useful.
 	mod->type = mod_alias;
