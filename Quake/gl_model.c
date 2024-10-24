@@ -3639,6 +3639,7 @@ static double MD5_ParseFloat(const char **buffer)
 #define MD5SINT() MD5_ParseSInt(&buffer)
 #define MD5FLOAT() MD5_ParseFloat(&buffer)
 #define MD5CHECK(s) MD5_ParseCheck(s, &buffer)
+#define MD5IGNORE() buffer = COM_Parse(buffer)
 
 typedef struct
 {
@@ -3973,15 +3974,15 @@ static void MD5Anim_Load(md5animctx_t *ctx, boneinfo_t *bones, size_t numbones)
 	MD5EXPECT("{");
 	while(MD5CHECK("("))
 	{
-		(void)MD5FLOAT();
-		(void)MD5FLOAT();
-		(void)MD5FLOAT();
+		MD5IGNORE();
+		MD5IGNORE();
+		MD5IGNORE();
 		MD5EXPECT(")");
 
 		MD5EXPECT("(");
-		(void)MD5FLOAT();
-		(void)MD5FLOAT();
-		(void)MD5FLOAT();
+		MD5IGNORE();
+		MD5IGNORE();
+		MD5IGNORE();
 		MD5EXPECT(")");
 	}
 	MD5EXPECT("}");
@@ -3990,15 +3991,15 @@ static void MD5Anim_Load(md5animctx_t *ctx, boneinfo_t *bones, size_t numbones)
 	MD5EXPECT("{");
 	while(MD5CHECK("("))
 	{
-		(void)MD5FLOAT();
-		(void)MD5FLOAT();
-		(void)MD5FLOAT();
+		MD5IGNORE();
+		MD5IGNORE();
+		MD5IGNORE();
 		MD5EXPECT(")");
 
 		MD5EXPECT("(");
-		(void)MD5FLOAT();
-		(void)MD5FLOAT();
-		(void)MD5FLOAT();
+		MD5IGNORE();
+		MD5IGNORE();
+		MD5IGNORE();
 		MD5EXPECT(")");
 	}
 	MD5EXPECT("}");
