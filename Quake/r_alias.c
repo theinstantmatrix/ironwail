@@ -63,8 +63,8 @@ typedef struct aliasinstance_s {
 
 struct ibuf_s {
 	int			count;
+	int			skinnum;
 	entity_t	*ent;
-	gltexture_t	*textures[2];
 
 	struct {
 		float	matviewproj[16];
@@ -292,13 +292,13 @@ void R_SetupAliasLighting (entity_t	*e)
 R_FlushAliasInstances
 =================
 */
-void R_FlushAliasInstances (void)
+void R_FlushAliasInstances (qboolean showtris)
 {
 	extern cvar_t r_softemu_mdl_warp;
 	qmodel_t	*model;
 	aliashdr_t	*paliashdr;
 	qboolean	alphatest, translucent, oit, md5;
-	int			mode;
+	int			anim, mode;
 	unsigned	state;
 	GLuint		buf;
 	GLbyte		*ofs;
@@ -306,12 +306,41 @@ void R_FlushAliasInstances (void)
 	GLuint		buffers[2];
 	GLintptr	offsets[2];
 	GLsizeiptr	sizes[2];
+	gltexture_t	*textures[2];
 
 	if (!ibuf.count)
 		return;
 
 	model = ibuf.ent->model;
 	paliashdr = (aliashdr_t *)Mod_Extradata (model);
+
+	//
+	// set up textures
+	//
+	anim = (int)(cl.time*10) & 3;
+	textures[0] = paliashdr->gltextures[ibuf.skinnum][anim];
+	textures[1] = paliashdr->fbtextures[ibuf.skinnum][anim];
+	if (ibuf.ent->colormap != vid.colormap && !gl_nocolors.value)
+		if (PTR_IN_RANGE (ibuf.ent, cl_entities + 1, cl_entities + cl.maxclients)) /* && !strcmp (ibuf.ent->model->name, "progs/player.mdl") */
+			textures[0] = playertextures[ibuf.ent - cl_entities - 1];
+
+	if (!gl_fullbrights.value)
+		textures[1] = blacktexture;
+
+	if (r_lightmap_cheatsafe)
+	{
+		textures[0] = greytexture;
+		textures[1] = blacktexture;
+	}
+
+	if (!textures[1])
+		textures[1] = blacktexture;
+
+	if (showtris)
+	{
+		textures[0] = blacktexture;
+		textures[1] = whitetexture;
+	}
 
 	GL_BeginGroup (model->name);
 
@@ -390,7 +419,7 @@ void R_FlushAliasInstances (void)
 		GL_BindBuffersRange (GL_SHADER_STORAGE_BUFFER, 1, 2, buffers, offsets, sizes);
 	}
 
-	GL_BindTextures (0, 2, ibuf.textures);
+	GL_BindTextures (0, 2, textures);
 
 	GL_BindBuffer (GL_ELEMENT_ARRAY_BUFFER, model->meshindexesvbo);
 	GL_DrawElementsInstancedFunc (GL_TRIANGLES, paliashdr->numindexes, GL_UNSIGNED_SHORT, (void *)paliashdr->eboofs, ibuf.count);
@@ -409,8 +438,7 @@ R_DrawAliasModel_Real
 static void R_DrawAliasModel_Real (entity_t *e, qboolean showtris)
 {
 	aliashdr_t	*paliashdr;
-	int			anim, skinnum;
-	gltexture_t	*tx, *fb;
+	int			skinnum;
 	lerpdata_t	lerpdata;
 	float		fovscale = 1.0f;
 	float		model_matrix[16];
@@ -476,7 +504,6 @@ static void R_DrawAliasModel_Real (entity_t *e, qboolean showtris)
 	//
 	// set up textures
 	//
-	anim = (int)(cl.time*10) & 3;
 	skinnum = e->skinnum;
 	if ((skinnum >= paliashdr->numskins) || (skinnum < 0))
 	{
@@ -484,56 +511,33 @@ static void R_DrawAliasModel_Real (entity_t *e, qboolean showtris)
 		// ericw -- display skin 0 for winquake compatibility
 		skinnum = 0;
 	}
-	tx = paliashdr->gltextures[skinnum][anim];
-	fb = paliashdr->fbtextures[skinnum][anim];
-	if (e->colormap != vid.colormap && !gl_nocolors.value)
-	{
-		if ((uintptr_t)e >= (uintptr_t)&cl_entities[1] && (uintptr_t)e <= (uintptr_t)&cl_entities[cl.maxclients]) /* && !strcmp (currententity->model->name, "progs/player.mdl") */
-			tx = playertextures[e - cl_entities - 1];
-	}
-	if (!gl_fullbrights.value)
-		fb = blacktexture;
+	if (r_lightmap_cheatsafe || showtris)
+		skinnum = 0;
 
 	//
 	// draw it
 	//
 
-	if (r_fullbright_cheatsafe)
+	if (r_fullbright_cheatsafe || showtris)
 		lightcolor[0] = lightcolor[1] = lightcolor[2] = 0.5f;
-
-	if (r_lightmap_cheatsafe)
-	{
-		tx = greytexture;
-		fb = blacktexture;
-	}
-
-	if (!fb)
-		fb = blacktexture;
 
 	if (showtris)
-	{
-		tx = blacktexture;
-		fb = whitetexture;
-		lightcolor[0] = lightcolor[1] = lightcolor[2] = 0.5f;
 		entalpha = 1.f;
-	}
 
 	if (ibuf.count)
 	{
 		if (ibuf.count == countof(ibuf.inst) ||
 			ibuf.ent->model != e->model ||
-			ibuf.textures[0] != tx ||
-			ibuf.textures[1] != fb)
+			ibuf.skinnum != skinnum)
 		{
-			R_FlushAliasInstances ();
+			R_FlushAliasInstances (showtris);
 		}
 	}
 
 	if (!ibuf.count)
 	{
-		ibuf.ent         = e;
-		ibuf.textures[0] = tx;
-		ibuf.textures[1] = fb;
+		ibuf.ent = e;
+		ibuf.skinnum = skinnum;
 	}
 
 	instance = &ibuf.inst[ibuf.count++];
@@ -570,7 +574,7 @@ void R_DrawAliasModels (entity_t **ents, int count)
 	int i;
 	for (i = 0; i < count; i++)
 		R_DrawAliasModel_Real (ents[i], false);
-	R_FlushAliasInstances ();
+	R_FlushAliasInstances (false);
 }
 
 /*
@@ -583,5 +587,5 @@ void R_DrawAliasModels_ShowTris (entity_t **ents, int count)
 	int i;
 	for (i = 0; i < count; i++)
 		R_DrawAliasModel_Real (ents[i], true);
-	R_FlushAliasInstances ();
+	R_FlushAliasInstances (true);
 }
