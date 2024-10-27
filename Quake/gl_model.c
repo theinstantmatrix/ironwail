@@ -80,6 +80,10 @@ static void R_MD5_f (cvar_t *cvar)
 	for (i=0 , mod=mod_known ; i<mod_numknown ; i++, mod++)
 		if (mod->type == mod_alias)
 			Mod_LoadModel (mod, false);
+
+	if (cls.state == ca_connected && cls.signon == SIGNONS)
+		for (i = 0; i < cl.maxclients; i++)
+			R_TranslateNewPlayerSkin (i);
 }
 
 /*
