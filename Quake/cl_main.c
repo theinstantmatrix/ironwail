@@ -308,6 +308,16 @@ void CL_PrintEntities_f (void)
 
 /*
 ===============
+CL_IsPlayerEnt
+===============
+*/
+qboolean CL_IsPlayerEnt (const entity_t *ent)
+{
+	return (uintptr_t)ent - (uintptr_t)(cl_entities + 1) < (uintptr_t)cl.maxclients;
+}
+
+/*
+===============
 CL_SetLightstyle
 
 Sets the lightstyle map and updates the length, peak, and average values

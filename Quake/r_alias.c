@@ -63,7 +63,6 @@ typedef struct aliasinstance_s {
 
 struct ibuf_s {
 	int			count;
-	int			skinnum;
 	entity_t	*ent;
 
 	struct {
@@ -298,7 +297,7 @@ void R_FlushAliasInstances (qboolean showtris)
 	qmodel_t	*model;
 	aliashdr_t	*paliashdr;
 	qboolean	alphatest, translucent, oit, md5;
-	int			anim, mode;
+	int			skinnum, anim, mode;
 	unsigned	state;
 	GLuint		buf;
 	GLbyte		*ofs;
@@ -318,10 +317,18 @@ void R_FlushAliasInstances (qboolean showtris)
 	// set up textures
 	//
 	anim = (int)(cl.time*10) & 3;
-	textures[0] = paliashdr->gltextures[ibuf.skinnum][anim];
-	textures[1] = paliashdr->fbtextures[ibuf.skinnum][anim];
+	skinnum = ibuf.ent->skinnum;
+	if ((skinnum >= paliashdr->numskins) || (skinnum < 0))
+	{
+		Con_DPrintf ("R_DrawAliasModel: no such skin # %d for '%s'\n", skinnum, model->name);
+		// ericw -- display skin 0 for winquake compatibility
+		skinnum = 0;
+	}
+
+	textures[0] = paliashdr->gltextures[skinnum][anim];
+	textures[1] = paliashdr->fbtextures[skinnum][anim];
 	if (ibuf.ent->colormap != vid.colormap && !gl_nocolors.value)
-		if (PTR_IN_RANGE (ibuf.ent, cl_entities + 1, cl_entities + cl.maxclients)) /* && !strcmp (ibuf.ent->model->name, "progs/player.mdl") */
+		if (CL_IsPlayerEnt (ibuf.ent)) /* && !strcmp (ibuf.ent->model->name, "progs/player.mdl") */
 			textures[0] = playertextures[ibuf.ent - cl_entities - 1];
 
 	if (!gl_fullbrights.value)
@@ -432,13 +439,38 @@ void R_FlushAliasInstances (qboolean showtris)
 
 /*
 =================
+R_Alias_CanAddToBatch
+=================
+*/
+static qboolean R_Alias_CanAddToBatch (const entity_t *e)
+{
+	// empty batch
+	if (!ibuf.count)
+		return true;
+
+	// full batch
+	if (ibuf.count == countof (ibuf.inst))
+		return false;
+
+	// different models/skins
+	if (ibuf.ent->model != e->model || ibuf.ent->skinnum != e->skinnum)
+		return false;
+
+	// players have custom colors
+	if (!gl_nocolors.value && CL_IsPlayerEnt (ibuf.ent))
+		return false;
+
+	return true;
+}
+
+/*
+=================
 R_DrawAliasModel_Real
 =================
 */
 static void R_DrawAliasModel_Real (entity_t *e, qboolean showtris)
 {
 	aliashdr_t	*paliashdr;
-	int			skinnum;
 	lerpdata_t	lerpdata;
 	float		fovscale = 1.0f;
 	float		model_matrix[16];
@@ -502,19 +534,6 @@ static void R_DrawAliasModel_Real (entity_t *e, qboolean showtris)
 	R_SetupAliasLighting (e);
 
 	//
-	// set up textures
-	//
-	skinnum = e->skinnum;
-	if ((skinnum >= paliashdr->numskins) || (skinnum < 0))
-	{
-		Con_DPrintf ("R_DrawAliasModel: no such skin # %d for '%s'\n", skinnum, e->model->name);
-		// ericw -- display skin 0 for winquake compatibility
-		skinnum = 0;
-	}
-	if (r_lightmap_cheatsafe || showtris)
-		skinnum = 0;
-
-	//
 	// draw it
 	//
 
@@ -524,21 +543,11 @@ static void R_DrawAliasModel_Real (entity_t *e, qboolean showtris)
 	if (showtris)
 		entalpha = 1.f;
 
-	if (ibuf.count)
-	{
-		if (ibuf.count == countof(ibuf.inst) ||
-			ibuf.ent->model != e->model ||
-			ibuf.skinnum != skinnum)
-		{
-			R_FlushAliasInstances (showtris);
-		}
-	}
+	if (!R_Alias_CanAddToBatch (e))
+		R_FlushAliasInstances (showtris);
 
 	if (!ibuf.count)
-	{
 		ibuf.ent = e;
-		ibuf.skinnum = skinnum;
-	}
 
 	instance = &ibuf.inst[ibuf.count++];
 
