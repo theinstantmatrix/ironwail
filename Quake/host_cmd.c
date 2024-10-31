@@ -71,10 +71,8 @@ static filelist_item_t *FileList_AddWithData (const char *name, const void *data
 
 	// ignore duplicate
 	for (item = *list; item; item = item->next)
-	{
-		if (!Q_strcmp (name, item->name))
+		if (!q_strcasecmp (name, item->name))
 			return item;
-	}
 
 	item = (filelist_item_t *) malloc (sizeof(filelist_item_t) + datasize);
 	if (!item)
