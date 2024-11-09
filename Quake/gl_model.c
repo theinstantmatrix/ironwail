@@ -2728,10 +2728,10 @@ ALIAS MODELS
 ==============================================================================
 */
 
-aliashdr_t	*pheader;
+aliashdr_t			*pheader;
 
-stvert_t	stverts[MAXALIASVERTS];
-mtriangle_t	triangles[MAXALIASTRIS];
+const stvert_t		*stverts;
+const dtriangle_t	*triangles;
 
 // a pose is a single set of vertexes.  a frame may be
 // an animating sequence of poses
@@ -3257,16 +3257,16 @@ static void Mod_LoadAliasModel (qmodel_t *mod, void *buffer)
 	if (pheader->numverts <= 0)
 		Sys_Error ("model %s has no vertices", mod->name);
 
-	if (pheader->numverts > MAXALIASVERTS)
-		Sys_Error ("model %s has too many vertices (%d; max = %d)", mod->name, pheader->numverts, MAXALIASVERTS);
+	if (pheader->numverts > MAXALIASVERTS_QS && (developer.value || map_checks.value))
+		Con_Warning ("model %s vertex count of %d exceeds QS limit of %d\n", mod->name, pheader->numverts, MAXALIASVERTS_QS);
 
 	pheader->numtris = LittleLong (pinmodel->numtris);
 
 	if (pheader->numtris <= 0)
 		Sys_Error ("model %s has no triangles", mod->name);
 
-	if (pheader->numtris > MAXALIASTRIS)
-		Sys_Error ("model %s has too many triangles (%d; max = %d)", mod->name, pheader->numtris, MAXALIASTRIS);
+	if (pheader->numtris > MAXALIASTRIS_QS && (developer.value || map_checks.value))
+		Con_Warning ("model %s triangle count of %d exceeds QS limit of %d\n", mod->name, pheader->numtris, MAXALIASTRIS_QS);
 
 	pheader->numframes = LittleLong (pinmodel->numframes);
 	numframes = pheader->numframes;
@@ -3291,29 +3291,31 @@ static void Mod_LoadAliasModel (qmodel_t *mod, void *buffer)
 	pskintype = (daliasskintype_t *) Mod_LoadAllSkins (pheader->numskins, pskintype);
 
 //
-// load base s and t vertices
+// endian-swap base s and t vertices in place
 //
 	pinstverts = (stvert_t *)pskintype;
+	stverts = pinstverts;
 
 	for (i=0 ; i<pheader->numverts ; i++)
 	{
-		stverts[i].onseam = LittleLong (pinstverts[i].onseam);
-		stverts[i].s = LittleLong (pinstverts[i].s);
-		stverts[i].t = LittleLong (pinstverts[i].t);
+		pinstverts[i].onseam = LittleLong (pinstverts[i].onseam);
+		pinstverts[i].s = LittleLong (pinstverts[i].s);
+		pinstverts[i].t = LittleLong (pinstverts[i].t);
 	}
 
 //
-// load triangle lists
+// endian-swap triangle lists in place
 //
 	pintriangles = (dtriangle_t *)&pinstverts[pheader->numverts];
+	triangles = pintriangles;
 
 	for (i=0 ; i<pheader->numtris ; i++)
 	{
-		triangles[i].facesfront = LittleLong (pintriangles[i].facesfront);
+		pintriangles[i].facesfront = LittleLong (pintriangles[i].facesfront);
 
 		for (j=0 ; j<3 ; j++)
 		{
-			triangles[i].vertindex[j] =
+			pintriangles[i].vertindex[j] =
 					LittleLong (pintriangles[i].vertindex[j]);
 		}
 	}

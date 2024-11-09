@@ -311,12 +311,6 @@ typedef struct
 	maliasgroupframedesc_t	frames[1];
 } maliasgroup_t;
 
-// !!! if this is changed, it must be changed in asm_draw.h too !!!
-typedef struct mtriangle_s {
-	int					facesfront;
-	int					vertindex[3];
-} mtriangle_t;
-
 
 #define	MAX_SKINS	32
 typedef struct {
@@ -386,13 +380,13 @@ typedef struct
 	bonepose_t inverse;
 } boneinfo_t;
 
-#define	MAXALIASVERTS	2000 //johnfitz -- was 1024
-#define	MAXALIASFRAMES	1024 //spike -- was 256
-#define	MAXALIASTRIS	4096 //ericw -- was 2048
-extern	aliashdr_t	*pheader;
-extern	stvert_t	stverts[MAXALIASVERTS];
-extern	mtriangle_t	triangles[MAXALIASTRIS];
-extern	trivertx_t	*poseverts[MAXALIASFRAMES];
+#define	MAXALIASVERTS_QS	2000 //johnfitz -- was 1024
+#define	MAXALIASFRAMES		1024 //spike -- was 256
+#define	MAXALIASTRIS_QS		4096 //ericw -- was 2048
+extern	aliashdr_t			*pheader;
+extern	const stvert_t		*stverts;
+extern	const dtriangle_t	*triangles;
+extern	trivertx_t			*poseverts[MAXALIASFRAMES];
 
 //===================================================================
 
