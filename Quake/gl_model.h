@@ -297,21 +297,6 @@ typedef struct
 	char				name[16];
 } maliasframedesc_t;
 
-typedef struct
-{
-	trivertx_t			bboxmin;
-	trivertx_t			bboxmax;
-	int					frame;
-} maliasgroupframedesc_t;
-
-typedef struct
-{
-	int						numframes;
-	int						intervals;
-	maliasgroupframedesc_t	frames[1];
-} maliasgroup_t;
-
-
 #define	MAX_SKINS	32
 typedef struct {
 	int			ident;
