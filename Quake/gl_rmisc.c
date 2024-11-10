@@ -41,6 +41,7 @@ extern cvar_t r_showbboxes_health;
 extern cvar_t r_showbboxes_links;
 extern cvar_t r_showbboxes_targets;
 extern cvar_t r_showfields;
+extern cvar_t r_showfields_align;
 extern cvar_t r_lerpmodels;
 extern cvar_t r_lerpmove;
 extern cvar_t r_nolerp_list;
@@ -335,6 +336,7 @@ void R_Init (void)
 	Cvar_RegisterVariable (&r_showbboxes_links);
 	Cvar_RegisterVariable (&r_showbboxes_targets);
 	Cvar_RegisterVariable (&r_showfields);
+	Cvar_RegisterVariable (&r_showfields_align);
 	Cvar_RegisterVariable (&gl_farclip);
 	Cvar_RegisterVariable (&gl_fullbrights);
 	Cvar_SetCallback (&gl_fullbrights, GL_Fullbrights_f);

@@ -124,6 +124,7 @@ extern	cvar_t	con_notifyfadetime;
 
 extern	edict_t	**bbox_linked;
 extern	cvar_t	r_showfields;
+extern	cvar_t	r_showfields_align;
 
 qboolean	scr_initialized;		// ready to draw
 
@@ -1369,9 +1370,9 @@ void SCR_DrawEdictInfo (void)
 		// Compute anchor point
 		if (i == 0)
 		{
-			// With r_showfields < 0 the field overlay tracks the focused entity,
+			// With r_showfields_align 0 the field overlay tracks the focused entity,
 			// so we disable the simple one (number + classname) to avoid overlap.
-			if (r_showfields.value < 0.f)
+			if (!r_showfields_align.value)
 				continue;
 			//SCR_GetEntityBottom (ed, anchor);
 			SCR_GetEntityCenter (ed, anchor);
@@ -1418,8 +1419,8 @@ void SCR_DrawEdictInfo (void)
 		ProjectVector (anchor, r_matviewproj, proj);
 		SCR_ProjToCanvas (proj, &proj2canvas, &x, &y);
 
-		// r_showfields > 0 locks the overlay to the bottom-right
-		if (r_showfields.value > 0.f)
+		// r_showfields_align 1 locks the overlay to the bottom-right
+		if (r_showfields_align.value)
 		{
 			x = glcanvas.right;
 			y = glcanvas.bottom;
