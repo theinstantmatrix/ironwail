@@ -363,6 +363,7 @@ typedef struct
 	bonepose_t inverse;
 } boneinfo_t;
 
+#define	MAXALIASVERTS		0x7fff //16-bit index buffer + onseam duplication
 #define	MAXALIASVERTS_QS	2000 //johnfitz -- was 1024
 #define	MAXALIASFRAMES		1024 //spike -- was 256
 #define	MAXALIASTRIS_QS		4096 //ericw -- was 2048

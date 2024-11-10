@@ -3256,16 +3256,16 @@ static void Mod_LoadAliasModel (qmodel_t *mod, void *buffer)
 
 	if (pheader->numverts <= 0)
 		Sys_Error ("model %s has no vertices", mod->name);
-
-	if (pheader->numverts > MAXALIASVERTS_QS && (developer.value || map_checks.value))
+	else if (pheader->numverts > MAXALIASVERTS)
+		Sys_Error ("model %s has too many vertices (%d; max = %d)", mod->name, pheader->numverts, MAXALIASVERTS);
+	else if (pheader->numverts > MAXALIASVERTS_QS && (developer.value || map_checks.value))
 		Con_Warning ("model %s vertex count of %d exceeds QS limit of %d\n", mod->name, pheader->numverts, MAXALIASVERTS_QS);
 
 	pheader->numtris = LittleLong (pinmodel->numtris);
 
 	if (pheader->numtris <= 0)
 		Sys_Error ("model %s has no triangles", mod->name);
-
-	if (pheader->numtris > MAXALIASTRIS_QS && (developer.value || map_checks.value))
+	else if (pheader->numtris > MAXALIASTRIS_QS && (developer.value || map_checks.value))
 		Con_Warning ("model %s triangle count of %d exceeds QS limit of %d\n", mod->name, pheader->numtris, MAXALIASTRIS_QS);
 
 	pheader->numframes = LittleLong (pinmodel->numframes);
