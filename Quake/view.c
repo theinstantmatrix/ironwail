@@ -448,14 +448,16 @@ V_CalcBlend
 */
 void V_CalcBlend (void)
 {
-	float	r, g, b, a, a2;
-	int		j;
-	cvar_t	*cshiftpercent_cvars[NUM_CSHIFTS] = {
+	static const cvar_t	* const cshiftpercent_cvars[NUM_CSHIFTS] =
+	{
 		&gl_cshiftpercent_contents,
 		&gl_cshiftpercent_damage,
 		&gl_cshiftpercent_bonus,
 		&gl_cshiftpercent_powerup
 	};
+
+	float	r, g, b, a, a2;
+	int		j;
 
 	r = 0;
 	g = 0;
