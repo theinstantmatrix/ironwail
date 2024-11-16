@@ -484,13 +484,14 @@ typedef struct bmodel_gpu_marksurf_s {
 
 typedef struct bmodel_gpu_surf_s {
 	vec4_t		plane;
-	vec3_t		mins;
 	GLuint		framecount;
-	vec3_t		maxs;
 	GLuint		texnum;
 	GLuint		numedges;
 	GLuint		firstvert;
-	GLuint		padding[2];
+	vec3_t		mins;
+	GLuint		padding0;
+	vec3_t		maxs;
+	GLuint		padding1;
 } bmodel_gpu_surf_t;
 
 void GL_BuildLightmaps (void);
