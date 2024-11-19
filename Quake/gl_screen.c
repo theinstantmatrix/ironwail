@@ -92,6 +92,7 @@ cvar_t		scr_crosshairscale = {"scr_crosshairscale", "1", CVAR_ARCHIVE};
 cvar_t		scr_pixelaspect = {"scr_pixelaspect", "1", CVAR_ARCHIVE};
 cvar_t		scr_showfps = {"scr_showfps", "0", CVAR_ARCHIVE};
 cvar_t		scr_showspeed = {"scr_showspeed", "0", CVAR_ARCHIVE};
+cvar_t		scr_showspeed_ofs = {"scr_showspeed_ofs", "0", CVAR_ARCHIVE};
 cvar_t		scr_clock = {"scr_clock", "0", CVAR_ARCHIVE};
 //johnfitz
 cvar_t		scr_usekfont = {"scr_usekfont", "0", CVAR_NONE}; // 2021 re-release
@@ -636,6 +637,7 @@ void SCR_Init (void)
 	Cvar_RegisterVariable (&scr_crosshairscale);
 	Cvar_RegisterVariable (&scr_showfps);
 	Cvar_RegisterVariable (&scr_showspeed);
+	Cvar_RegisterVariable (&scr_showspeed_ofs);
 	Cvar_RegisterVariable (&scr_clock);
 	Cvar_RegisterVariable (&cl_screenshotname);
 	Cvar_RegisterVariable (&scr_demobar_timeout);
@@ -753,7 +755,7 @@ SCR_DrawSpeed
 */
 void SCR_DrawSpeed (void)
 {
-    if (cl.intermission || CL_InCutscene () || scr_viewsize.value >= 130)
+	if (cl.intermission || CL_InCutscene () || scr_viewsize.value >= 130)
 		return;
 
 	const float show_speed_interval_value = 0.05f;
@@ -780,10 +782,13 @@ void SCR_DrawSpeed (void)
 	{
 		if (display_speed >= 0)
 		{
+			float y;
 			char str[12];
+
 			sprintf (str, "%d", (int) display_speed);
 			GL_SetCanvas (CANVAS_CROSSHAIR);
-			Draw_String (-(int)strlen(str)*4, 4, str);
+			y = CLAMP (glcanvas.top, 4.f + scr_showspeed_ofs.value, glcanvas.bottom - 8.f);
+			Draw_String (-(int)strlen(str)*4, y, str);
 		}
 	}
 
