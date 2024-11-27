@@ -343,6 +343,18 @@ float VectorNormalize (vec3_t v)
 	return length;
 }
 
+float DistanceSquared (const vec3_t a, const vec3_t b)
+{
+	vec3_t ab;
+	VectorSubtract (b, a, ab);
+	return VectorLengthSquared (ab);
+}
+
+float Distance (const vec3_t a, const vec3_t b)
+{
+	return sqrt (DistanceSquared (a, b));
+}
+
 void VectorInverse (vec3_t v)
 {
 	v[0] = -v[0];

@@ -92,6 +92,8 @@ int VectorCompare (const vec3_t v1, const vec3_t v2);
 vec_t VectorLength (const vec3_t v);
 void CrossProduct (const vec3_t v1, const vec3_t v2, vec3_t cross);
 float VectorNormalize (vec3_t v);		// returns vector length
+float DistanceSquared (const vec3_t a, const vec3_t b);
+float Distance (const vec3_t a, const vec3_t b);
 void VectorInverse (vec3_t v);
 void VectorScale (const vec3_t in, vec_t scale, vec3_t out);
 int Q_log2(int val);
