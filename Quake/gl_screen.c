@@ -1353,15 +1353,34 @@ void SCR_DrawEdictInfo (void)
 	vec3_t		crosshair, focus, anchor, proj, bgcolor;
 	edict_t		*ed;
 
-	if (VEC_SIZE (bbox_linked) == 0)
+	if (VEC_SIZE (bbox_linked) == 0 && VEC_SIZE (r_pointfile) == 0)
 		return;
 
 	GL_SetCanvas (CANVAS_BOTTOMRIGHT);
 	SCR_SetupProjToCanvasMap (&proj2canvas);
+	VectorMA (r_origin, 8.f, vpn, crosshair);
+
+	// If a pointfile was loaded, print "Leak" at the beginning
+	if (VEC_SIZE (r_pointfile) != 0)
+	{
+		VectorCopy (r_pointfile[0], anchor);
+		SCR_ClipToFrustum (anchor, crosshair);
+		ProjectVector (anchor, r_matviewproj, proj);
+		SCR_ProjToCanvas (proj, &proj2canvas, &x, &y);
+
+		VEC_CLEAR (scr_edictoverlaystrings);
+		MultiString_Append (&scr_edictoverlaystrings, "");
+		COM_TintString ("Leak", tinted, sizeof (tinted));
+		MultiString_Append (&scr_edictoverlaystrings, tinted);
+
+		SCR_DrawKeyValueOverlay (x, y, scr_edictoverlaystrings, rgb_black);
+	}
+
+	if (VEC_SIZE (bbox_linked) == 0)
+		return;
 
 	PR_SwitchQCVM (&sv.qcvm);
 
-	VectorMA (r_origin, 8.f, vpn, crosshair);
 	SCR_GetEntityCenter (bbox_linked[0], focus);
 	SCR_ClipToFrustum (focus, crosshair);
 
