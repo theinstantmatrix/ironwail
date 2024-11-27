@@ -77,7 +77,6 @@ do\
 	}\
 } while (0)
 
-void TurnVector (vec3_t out, const vec3_t forward, const vec3_t side, float angle); //johnfitz
 void VectorAngles (const vec3_t forward, vec3_t angles); //johnfitz
 
 void VectorMA (const vec3_t veca, float scale, const vec3_t vecb, vec3_t vecc);
