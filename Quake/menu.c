@@ -3104,7 +3104,7 @@ void M_Calibration_Key (int key)
 #define MIN_TRIGGER_DEADZONE	0.f
 #define MAX_TRIGGER_DEADZONE	0.75f
 #define MIN_GYRO_SENS			0.1f
-#define MAX_GYRO_SENS			8.f
+#define MAX_GYRO_SENS			20.f
 #define MIN_GYRO_NOISE_THRESH	0.f
 #define MAX_GYRO_NOISE_THRESH	5.f
 
