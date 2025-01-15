@@ -4970,6 +4970,7 @@ static const menukeybind_t menubinds[] =
 	{"menu_maps",		"Maps menu",			KDM_ANY},
 	{"menu_options",	"Options menu",			KDM_ANY},
 	{"screenshot",		"Screenshot",			KDM_ANY},
+	{"+showscores",		"Show score",			KDM_ANY},
 };
 
 #define	NUMCOMMANDS		Q_COUNTOF(menubinds)
