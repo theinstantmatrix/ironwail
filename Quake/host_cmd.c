@@ -777,6 +777,13 @@ static void Modlist_RegisterAddons (void *param)
 		if (!info->json)
 		{
 			info->json = entry;
+			// If the addon has a non-localized name, convert it in-place from UTF-8
+			if (name && name[0] && name[0] != '$')
+			{
+				char utf8name[1024];
+				q_strlcpy (utf8name, name, sizeof (utf8name));
+				UTF8_ToQuake ((char *)name, strlen (name) + 1, utf8name);
+			}
 			info->full_name = name;
 			info->download = download;
 			if (size)
