@@ -605,7 +605,7 @@ qboolean Sys_Explore (const char *path)
 	hr = Sys_InitCOM ();
 	if (FAILED (hr))
 	{
-		Sys_Printf ("Sys_Explore: failed to initialize COM (0x%08x).\n", hr);
+		Sys_Printf ("Sys_Explore: failed to initialize COM (0x%08lx).\n", hr);
 		return false;
 	}
 
@@ -613,7 +613,7 @@ qboolean Sys_Explore (const char *path)
 	hr = SHParseDisplayName (wpath, NULL, &folder, 0, &sfgaof);
 	if (FAILED (hr))
 	{
-		Sys_Printf ("Sys_Explore: SHParseDisplayName failed (0x%08x) for '%ws'.\n", hr, wpath);
+		Sys_Printf ("Sys_Explore: SHParseDisplayName failed (0x%08lx) for '%ls'.\n", hr, wpath);
 		goto cleanup_com;
 	}
 
@@ -621,7 +621,7 @@ qboolean Sys_Explore (const char *path)
 	hr = SHParseDisplayName (wpath, NULL, &file, 0, &sfgaof);
 	if (FAILED (hr))
 	{
-		Sys_Printf ("Sys_Explore: SHParseDisplayName failed (0x%08x) for '%ws'.\n", hr, wpath);
+		Sys_Printf ("Sys_Explore: SHParseDisplayName failed (0x%08lx) for '%ls'.\n", hr, wpath);
 		goto cleanup_folder;
 	}
 
@@ -629,7 +629,7 @@ qboolean Sys_Explore (const char *path)
 	if (SUCCEEDED (hr))
 		result = true;
 	else
-		Sys_Printf ("Sys_Explore: SHOpenFolderAndSelectItems failed (0x%08x) for '%ws'.\n", hr, wpath);
+		Sys_Printf ("Sys_Explore: SHOpenFolderAndSelectItems failed (0x%08lx) for '%ls'.\n", hr, wpath);
 
 	CoTaskMemFree (file);
 cleanup_folder:
