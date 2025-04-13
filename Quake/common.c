@@ -3036,12 +3036,8 @@ static void COM_InitBaseDir (void)
 	if (egs)
 		goto try_egs;
 
-	if (COM_SetBaseDir (host_parms->basedir))
-		return;
-
-	// executable might be in its own subdirectory, try going up one level
-	q_snprintf (path, sizeof (path), "%s/..", host_parms->basedir);
-	if (COM_SetBaseDir (path))
+	// try current working directory, then its ancestors (in case the executable is in its own subdirectory)
+	if (COM_SetBaseDirRec (host_parms->basedir))
 		return;
 
 	// on Linux, game data might actually be in the user dir
