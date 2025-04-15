@@ -69,6 +69,7 @@ cvar_t	joy_flick_time = { "joy_flick_time", "0.125", CVAR_ARCHIVE };
 cvar_t	joy_flick_recenter = { "joy_flick_recenter", "0.0", CVAR_ARCHIVE };
 cvar_t	joy_flick_deadzone = { "joy_flick_deadzone", "0.9", CVAR_ARCHIVE };
 cvar_t	joy_flick_noise_thresh = { "joy_flick_noise_thresh", "2.0", CVAR_ARCHIVE };
+cvar_t	joy_flick_adjust_speed = { "joy_flick_adjust_speed", "30.0", CVAR_ARCHIVE };
 cvar_t	joy_rumble = { "joy_rumble", "0.3", CVAR_ARCHIVE };
 cvar_t	joy_device = { "joy_device", "0", CVAR_ARCHIVE };
 cvar_t	joy_always_active = { "joy_always_active", "0", CVAR_ARCHIVE };
@@ -121,6 +122,7 @@ static struct
 {
 	float	yaw;
 	float	pitch;
+	float	yaw_delta;
 	float	prev_lerp_frac;
 	float	prev_angle;
 	float	prev_scale;
@@ -681,6 +683,7 @@ void IN_Init (void)
 	Cvar_RegisterVariable(&joy_flick_recenter);
 	Cvar_RegisterVariable(&joy_flick_deadzone);
 	Cvar_RegisterVariable(&joy_flick_noise_thresh);
+	Cvar_RegisterVariable(&joy_flick_adjust_speed);
 	Cvar_RegisterVariable(&joy_rumble);
 	Cvar_RegisterVariable(&joy_device);
 	Cvar_SetCallback(&joy_device, Joy_Device_f);
@@ -1128,7 +1131,18 @@ void IN_JoyMove (usercmd_t *cmd)
 					angle = NormalizeAngle (flick.prev_angle + delta);
 				}
 			}
+			flick.yaw_delta += delta;
+		}
+
+		// apply yaw adjustment
+		if (joy_flick_adjust_speed.value > 0.f)
+			delta = flick.yaw_delta * q_min (1.0, host_rawframetime * joy_flick_adjust_speed.value);
+		else
+			delta = flick.yaw_delta;
+		if (fabs (delta) > 0.01)
+		{
 			cl.viewangles[YAW] -= delta;
+			flick.yaw_delta -= delta;
 		}
 
 		// advance angle animation
@@ -1139,6 +1153,7 @@ void IN_JoyMove (usercmd_t *cmd)
 		}
 		else
 			lerp_frac = 1.f;
+
 		delta = IN_FlickStickEasing (lerp_frac) - IN_FlickStickEasing (flick.prev_lerp_frac);
 		cl.viewangles[YAW] -= flick.yaw * delta;
 		cl.viewangles[PITCH] -= flick.pitch * delta * CLAMP (0.f, joy_flick_recenter.value, 1.f);
