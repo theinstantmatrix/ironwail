@@ -332,6 +332,10 @@ static qboolean IN_UseController (int device_index)
 #if SDL_VERSION_ATLEAST (2, 0, 9)
 		if (joy_has_rumble)
 			SDL_GameControllerRumble (joy_active_controller, 0, 0, 100);
+#if SDL_VERSION_ATLEAST(2, 0, 14)
+		if (SDL_GameControllerHasLED (joy_active_controller))
+			SDL_GameControllerSetLED (joy_active_controller, 0, 0, 0);
+#endif // SDL_VERSION_ATLEAST (2, 0, 14)
 #endif // SDL_VERSION_ATLEAST (2, 0, 9)
 		SDL_GameControllerClose (joy_active_controller);
 
@@ -521,6 +525,7 @@ void IN_StartupJoystick (void)
 
 void IN_ShutdownJoystick (void)
 {
+	IN_UseController (-1);
 	SDL_QuitSubSystem(SDL_INIT_GAMECONTROLLER);
 }
 
