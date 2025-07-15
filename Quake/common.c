@@ -24,6 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include "quakedef.h"
 #include "q_ctype.h"
+#include "bgmusic.h"
 #include "steam.h"
 #include <time.h>
 #include <errno.h>
@@ -2559,6 +2560,7 @@ void COM_SwitchGame (const char *paths)
 		TexMgr_NewGame ();
 		Draw_NewGame ();
 		R_NewGame ();
+		BGM_Stop ();
 	}
 	ExtraMaps_Init ();
 	Host_Resetdemos ();
