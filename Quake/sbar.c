@@ -2066,6 +2066,7 @@ void Sbar_IntermissionOverlay (void)
 	char	time[32];
 	char	secrets[32];
 	char	monsters[32];
+	char	map[80];
 	int		ltime, lsecrets, lmonsters;
 	int		total;
 
@@ -2107,6 +2108,11 @@ void Sbar_IntermissionOverlay (void)
 	q_snprintf (time, sizeof (time), "%d:%02d", cl.completed_time / 60, cl.completed_time % 60);
 	q_snprintf (secrets, sizeof (secrets), "%d/%2d", cl.stats[STAT_SECRETS], cl.stats[STAT_TOTALSECRETS]);
 	q_snprintf (monsters, sizeof (monsters), "%d/%2d", cl.stats[STAT_MONSTERS], cl.stats[STAT_TOTALMONSTERS]);
+	if (cl.levelname[0])
+		Mod_SanitizeMapDescription (map, sizeof (map), cl.levelname);
+	else
+		q_strlcpy (map, cl.mapname, sizeof (map));
+	COM_TintString (map, map, sizeof (map));
 
 	ltime = Sbar_IntermissionTextWidth (time, 0);
 	lsecrets = Sbar_IntermissionTextWidth (secrets, 0);
@@ -2121,7 +2127,8 @@ void Sbar_IntermissionOverlay (void)
 	Draw_Pic (160 - total / 2, 56, pic);
 
 	pic = Draw_CachePic ("gfx/complete.lmp");
-	Draw_Pic (160 - pic->width / 2, 24, pic);
+	Draw_Pic (160 - pic->width / 2, 8, pic);
+	Draw_String (160 - strlen (map) * 8 / 2, 36, map);
 
 	Sbar_IntermissionText (160 + total / 2 - ltime, 64, time, 0);
 	Sbar_IntermissionText (160 + total / 2 - lsecrets, 104, secrets, 0);
